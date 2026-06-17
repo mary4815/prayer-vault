@@ -280,3 +280,38 @@ begin
     set plan = case when p_status in ('active','trialing') then p_plan else 'Personal' end
     where id = p_user;
 end; $$;
+
+-- =====================================================================
+-- v18 server-side paid-feature enforcement (safe to re-run)
+-- =====================================================================
+-- The frontend paywall (requirePlan() in index.html) can be bypassed by a
+-- determined user calling the database directly. These helpers + policies
+-- enforce the plan at the database, so a free user CANNOT write a paid
+-- resource even if they skip the UI. Source of truth: the subscriptions
+-- table the Stripe webhook keeps current, falling back to profiles.plan.
+
+create or replace function public.user_plan(p_user uuid)
+returns text language sql stable security definer set search_path = public as $$
+  select coalesce(
+    (select case when s.status in ('active','trialing') then s.plan else 'Personal' end
+       from public.subscriptions s where s.user_id = p_user),
+    (select plan from public.profiles where id = p_user),
+    'Personal'
+  );
+$$;
+
+create or replace function public.user_is_paid(p_user uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.user_plan(p_user) in ('Plus','Church');
+$$;
+
+create or replace function public.user_is_church(p_user uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.user_plan(p_user) = 'Church';
+$$;
+
+-- Creating a giving cause is a Church-tier feature. Enforce at the DB so a
+-- free user cannot bypass the UI and insert a cause directly.
+drop policy if exists "causes create" on public.causes;
+create policy "causes create" on public.causes for insert
+  with check (auth.uid() = created_by and public.user_is_church(auth.uid()));
