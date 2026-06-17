@@ -328,6 +328,18 @@ button{cursor:pointer}
 .past-reviews select{height:36px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
 
 /* ── REMINDERS PAGE ── */
+.email-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;box-shadow:0 10px 28px rgba(12,34,55,.12)}
+.email-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #eef0f2}
+.email-avatar{width:38px;height:38px;border-radius:50%;background:#0c2237;display:grid;place-items:center;flex-shrink:0;padding:7px}.email-avatar svg{width:100%;height:100%}
+.email-from{font-size:14px;font-weight:700;color:#0c2237}
+.email-addr{font-size:11px;color:#8a94a0}
+.email-icon{margin-left:auto;color:#b3bcc6}
+.email-subject{padding:12px 16px 2px;font-size:14px;font-weight:700;color:#0c2237}
+.email-body{padding:4px 16px 14px;font-size:13px;line-height:1.55;color:#33414f}
+.email-row{padding:12px 0;border-bottom:1px solid #f0f2f4}
+.email-row:last-child{border-bottom:0}
+.er-when{display:inline-block;font-size:11px;font-weight:600;color:#0c2237;background:#eef3f8;padding:3px 9px;border-radius:99px;margin-top:8px}
+.email-foot{padding:12px 16px;background:#f7f9fb;font-size:11px;color:#8a94a0;text-align:center;border-top:1px solid #eef0f2}
 .rem-layout{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
 .phone-wrap{position:sticky;top:20px}
 .phone{width:300px;background:#1a1a2e;border-radius:36px;padding:14px 10px;box-shadow:0 24px 60px rgba(0,0,0,.4);margin:0 auto}
@@ -1116,23 +1128,20 @@ button{cursor:pointer}
         </div>
         <div class="rem-layout">
           <div class="phone-wrap">
-            <div class="phone">
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <div class="wa-header">
-                  <div class="wa-av"></div>
-                  <div><div class="wa-name">Prayer Memory Vault</div><div class="wa-sub">Your daily prayer reminder</div></div>
-                  <span class="wa-dots">⋮</span>
+            <div class="email-card">
+              <div class="email-head">
+                <div class="email-avatar"><svg viewBox="0 0 24 24" fill="#e7b75f"><path d="M13 3h-2v6H5v2h6v10h2V11h6V9h-6z"/></svg></div>
+                <div>
+                  <div class="email-from">Prayer Memory Vault</div>
+                  <div class="email-addr">reminders@prayervault.app · to you</div>
                 </div>
-                <div class="wa-msgs" id="wa-preview">
-                  <div class="wa-date-div">Today</div>
-                  <div class="wa-bubble in">
-                    <strong>Prayer Memory Vault</strong>
-                    Loading your reminders…
-                    <div class="wa-time">9:00 AM ✓✓</div>
-                  </div>
-                </div>
+                <span class="email-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
               </div>
+              <div class="email-subject">Your prayer follow-up reminder</div>
+              <div class="email-body" id="wa-preview">
+                <div class="email-row">Loading your reminders…</div>
+              </div>
+              <div class="email-foot">Sent to your inbox by Prayer Memory Vault</div>
             </div>
           </div>
           <div>
@@ -3279,16 +3288,16 @@ function renderReminders(){
   const active=prayers.filter(p=>!p.answered&&p.followUp).sort((a,b)=>daysUntil(a.followUp)-daysUntil(b.followUp));
   if(!active.length){
     list.innerHTML=`<div class="empty"><div class="big">${icon('bell',28)}</div><h3>No reminders scheduled</h3><p>Add prayers with follow-up dates to see reminders here.</p></div>`;
-    wa.innerHTML=`<div class="wa-date-div">Today</div><div class="wa-bubble in"><strong>Prayer Memory Vault</strong>No reminders due yet. Add prayers with follow-up dates!<div class="wa-time">Now ✓✓</div></div>`;
+    wa.innerHTML=`<div class="email-row">No reminders due yet — add prayers with follow-up dates and they'll appear here.</div>`;
     return;
   }
   // Build phone preview — show first 3 due/overdue
   const preview=active.slice(0,3);
   const now=new Date();
-  wa.innerHTML=`<div class="wa-date-div">Follow-up Reminders</div>`+preview.map(p=>{
+  wa.innerHTML=preview.map(p=>{
     const d=daysUntil(p.followUp);
     const when=d<0?`${Math.abs(d)} day${Math.abs(d)!==1?'s':''} ago`:(d===0?'today':`in ${d} day${d!==1?'s':''}`);
-    return`<div class="wa-bubble in"><strong>Prayer Memory Vault</strong>Hi ${currentUser.first}! Today is your follow-up for *${p.person}*.\n\nYou've been praying for: "${p.request.slice(0,60)}${p.request.length>60?'…':''}"\n\nHow is ${p.person.split(' ')[0]} doing? Would you like to reach out today?<div class="wa-time">${d<=0?'Overdue':'Upcoming'} ✓✓</div></div>`;
+    return`<div class="email-row">Hi ${currentUser.first}! Today is your follow-up for <strong>${p.person}</strong>.<br><br>You've been praying for: "${p.request.slice(0,60)}${p.request.length>60?'…':''}"<br><br>How is ${p.person.split(' ')[0]} doing? Would you like to reach out today?<div class="er-when">${d<=0?'Overdue':when}</div></div>`;
   }).join('');
 
   // Build reminder list
