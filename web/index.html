@@ -2303,9 +2303,9 @@ async function startUpgrade(plan){
     const { data:{ session } }=await supa.auth.getSession();
     const res=await fetch(API_BASE+'/api/subscribe/checkout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')},body:JSON.stringify({plan})});
     if(res.ok){ const j=await res.json(); if(j.url){ location.href=j.url; return; } }
-    const j=await res.json().catch(()=>({}));
-    toast(j.error?('Billing: '+j.error):'Billing server unavailable. Start the Node server (see SETUP.md).');
-  }catch(e){ toast('Billing server unavailable. Start the Node server (see SETUP.md).'); }
+    const txt=await res.text().catch(()=>'');
+    alert('Upgrade failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''));
+  }catch(e){ alert('Upgrade error: '+((e&&e.message)||e)); }
 }
 async function openBillingPortal(){
   if(!useSupa()){ toast('Connect Supabase + the billing server first — see SETUP.md.'); return; }
@@ -2313,8 +2313,9 @@ async function openBillingPortal(){
     const { data:{ session } }=await supa.auth.getSession();
     const res=await fetch(API_BASE+'/api/billing/portal',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')}});
     if(res.ok){ const j=await res.json(); if(j.url){ location.href=j.url; return; } }
-    toast('Billing portal unavailable. Start the Node server (see SETUP.md).');
-  }catch(e){ toast('Billing portal unavailable. Start the Node server (see SETUP.md).'); }
+    const txt=await res.text().catch(()=>'');
+    alert('Manage Billing failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''));
+  }catch(e){ alert('Manage Billing error: '+((e&&e.message)||e)); }
 }
 document.getElementById('plan-grid')?.addEventListener('click',e=>{
   const btn=e.target.closest('.plan-btn'); if(!btn||btn.disabled)return;
