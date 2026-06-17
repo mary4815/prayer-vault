@@ -32,7 +32,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 
 /* ── AUTH ── */
-#auth-screen{display:flex;min-height:100vh}
+#auth-screen{display:none;min-height:100vh}
 .auth-left{flex:1;background:linear-gradient(160deg,var(--navy2) 0%,var(--navy) 60%,#143520 100%);display:flex;flex-direction:column;justify-content:center;padding:60px 56px;color:#fff}
 .auth-logo{display:flex;align-items:center;gap:14px;margin-bottom:44px}
 .auth-logo-icon{width:48px;height:48px;border-radius:12px;background:rgba(232,201,106,.15);border:1.5px solid rgba(232,201,106,.4);display:grid;place-items:center;padding:7px;flex-shrink:0}.auth-logo-icon svg{width:100%;height:100%}
@@ -340,6 +340,12 @@ button{cursor:pointer}
 .email-row:last-child{border-bottom:0}
 .er-when{display:inline-block;font-size:11px;font-weight:600;color:#0c2237;background:#eef3f8;padding:3px 9px;border-radius:99px;margin-top:8px}
 .email-foot{padding:12px 16px;background:#f7f9fb;font-size:11px;color:#8a94a0;text-align:center;border-top:1px solid #eef0f2}
+.rem-controls{background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px 16px 14px;margin-bottom:18px;box-shadow:0 6px 18px rgba(12,34,55,.06)}
+.rc-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:14px 0 8px;border-bottom:1px solid #f0f2f4;margin-bottom:4px}
+.rc-head strong{font-size:15px;color:#0c2237}
+.rc-head span{font-size:12px;color:#8a94a0}
+.rc-head span b{color:#0c2237;font-weight:600}
+.rc-actions{padding-top:14px;display:flex;gap:10px;align-items:center}
 .rem-layout{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
 .phone-wrap{position:sticky;top:20px}
 .phone{width:300px;background:#1a1a2e;border-radius:36px;padding:14px 10px;box-shadow:0 24px 60px rgba(0,0,0,.4);margin:0 auto}
@@ -1117,14 +1123,13 @@ button{cursor:pointer}
       <!-- REMINDERS -->
       <div class="page" id="page-reminders">
         <div class="topbar">
-          <div><h1>Reminders</h1><p>See the exact message that will be sent to you on each prayer's follow-up day.</p></div>
+          <div><h1>Reminders</h1><p>Choose how Prayer Vault reminds you to follow up on the people you're praying for.</p></div>
         </div>
-        <div class="connect-banner">
-          <span class="cb-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M21 11.5a8.4 8.4 0 0 1-1.2 4.4L21 20l-4.3-1.1a8.5 8.5 0 1 1 4.3-7.4Z"/></svg></span>
-          <div>
-            <strong>Email Reminders</strong>
-            <p>On your follow-up day, you'll receive an email with the person's name and what you were praying for. Below is a preview of what each message will look like.</p>
-          </div>
+        <div class="rem-controls" id="rem-controls">
+          <div class="rc-head"><strong>Reminder settings</strong><span>Sent to <b id="rem-sent-to">your email</b></span></div>
+          <div class="pref-row"><div><div class="pl">Follow-up reminders</div><div class="pd">Email me on each prayer's follow-up day</div></div><label class="toggle"><input type="checkbox" id="rem-toggle"/><span class="toggle-track"></span></label></div>
+          <div class="pref-row"><div><div class="pl">Weekly digest</div><div class="pd">A Sunday summary of everyone you're praying for</div></div><label class="toggle"><input type="checkbox" id="rem-digest"/><span class="toggle-track"></span></label></div>
+          <div class="rc-actions"><button class="btn btn-ghost btn-sm" id="rem-test">Send a test email</button><span class="pd" id="rem-count"></span></div>
         </div>
         <div class="rem-layout">
           <div class="phone-wrap">
@@ -1612,12 +1617,19 @@ async function googleSignIn(){
   const { error } = await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + location.pathname } });
   if(error) showAuthErr('Google sign-in failed: '+error.message);
 }
+// Reveal the login screen only after we KNOW there's no session, so reload never flashes login then signs back in.
+function revealAuth(){ if(!currentUser){ const a=document.getElementById('auth-screen'); if(a) a.style.display='flex'; } }
 async function checkSupabaseSession(){
-  if(!supa) return;
-  try{
-    const { data } = await supa.auth.getSession();
-    if(data && data.session && data.session.user) await onAuthed(data.session.user);
-  }catch(e){ /* not signed in */ }
+  if(supa){
+    try{
+      const { data } = await supa.auth.getSession();
+      if(data && data.session && data.session.user){ await onAuthed(data.session.user); return; }
+    }catch(e){ /* not signed in */ }
+  } else {
+    const sess=getSession();
+    if(sess){ const user=getUsers().find(u=>u.id===sess.id); if(user){ launchApp(user); return; } }
+  }
+  revealAuth(); // no session found — show the login screen
 }
 document.querySelectorAll('.g-signin').forEach(b=>b.addEventListener('click',googleSignIn));
 if(supa){
@@ -1625,6 +1637,8 @@ if(supa){
     if(event==='SIGNED_IN' && session && session.user && !currentUser) onAuthed(session.user);
   });
 }
+// Safety net: never leave the page blank — if nothing restored within 6s, show the login screen.
+setTimeout(revealAuth,6000);
 checkSupabaseSession();
 
 document.getElementById('do-login').addEventListener('click',async ()=>{
@@ -3286,6 +3300,36 @@ function renderReminders(){
   const list=document.getElementById('rem-list');
   const wa=document.getElementById('wa-preview');
   const active=prayers.filter(p=>!p.answered&&p.followUp).sort((a,b)=>daysUntil(a.followUp)-daysUntil(b.followUp));
+  // ── Reminder settings controls ──
+  if(currentUser){
+    const prefs=getPrefs(currentUser.id);
+    const sentTo=document.getElementById('rem-sent-to'); if(sentTo)sentTo.textContent=currentUser.email||'your email';
+    const tgl=document.getElementById('rem-toggle');
+    const dig=document.getElementById('rem-digest');
+    const cnt=document.getElementById('rem-count');
+    if(cnt)cnt.textContent=active.length?`${active.length} reminder${active.length!==1?'s':''} scheduled`:'';
+    if(tgl&&!tgl.dataset.wired){
+      tgl.dataset.wired='1';
+      tgl.checked=prefs.remind!==false;
+      tgl.addEventListener('change',function(){const pf=getPrefs(currentUser.id);pf.remind=this.checked;savePrefs(currentUser.id,pf);const s=document.getElementById('pref-remind');if(s)s.checked=this.checked;toast(this.checked?'Follow-up reminders on.':'Follow-up reminders off.');});
+    }else if(tgl){tgl.checked=prefs.remind!==false;}
+    if(dig&&!dig.dataset.wired){
+      dig.dataset.wired='1';
+      dig.checked=!!prefs.digest;
+      dig.addEventListener('change',function(){const pf=getPrefs(currentUser.id);pf.digest=this.checked;savePrefs(currentUser.id,pf);toast(this.checked?'Weekly digest on.':'Weekly digest off.');});
+    }else if(dig){dig.checked=!!prefs.digest;}
+    const test=document.getElementById('rem-test');
+    if(test&&!test.dataset.wired){
+      test.dataset.wired='1';
+      test.addEventListener('click',async function(){
+        this.disabled=true;
+        const msg=`Hi ${currentUser.first}! This is a test reminder from Prayer Vault. When a prayer's follow-up day arrives, you'll get a message like this with the person's name and what you've been praying for.`;
+        const r=await notify({ email:currentUser.email, subject:'Prayer Vault — test reminder', message:msg });
+        this.disabled=false;
+        toast(r&&r.ok?'Test email sent — check your inbox.':'Saved — test email will deliver once email keys are added.');
+      });
+    }
+  }
   if(!active.length){
     list.innerHTML=`<div class="empty"><div class="big">${icon('bell',28)}</div><h3>No reminders scheduled</h3><p>Add prayers with follow-up dates to see reminders here.</p></div>`;
     wa.innerHTML=`<div class="email-row">No reminders due yet — add prayers with follow-up dates and they'll appear here.</div>`;
@@ -3480,14 +3524,7 @@ function toast(msg){
 }
 
 // ═══ INIT ═══
-// Cloud mode restores the session via checkSupabaseSession() / onAuthStateChange.
-if(!supa){
-  const sess=getSession();
-  if(sess){
-    const user=getUsers().find(u=>u.id===sess.id);
-    if(user)launchApp(user);
-  }
-}
+// Session restore (cloud + local) is handled once in checkSupabaseSession() above.
 </script>
 </body>
 </html>
