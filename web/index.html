@@ -636,7 +636,7 @@ button{cursor:pointer}
       <button class="nbtn" data-page="confession"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v3.5"/><path d="M8.3 3.7h3.4"/><rect x="4.5" y="6.5" width="11" height="11" rx="1.5"/><path d="M10 9.5v5"/></svg></span>Confession</button>
       <button class="nbtn" data-page="donate"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8.5" width="14" height="8.5" rx="1.2"/><path d="M3 8.5h14"/><path d="M10 8.5v8.5"/><path d="M10 8.5c-1.4-3-5.2-2.8-5.2-.6 0 1.6 2.1.6 5.2.6z"/><path d="M10 8.5c1.4-3 5.2-2.8 5.2-.6 0 1.6-2.1.6-5.2.6z"/></svg></span>Donate</button>
       <div class="s-section">Features</div>
-      <button class="nbtn" onclick="showPage('profile');setTimeout(function(){var e=document.getElementById('billing-section');if(e)e.scrollIntoView({behavior:'smooth',block:'start'})},160)"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3H4.5A1.5 1.5 0 0 0 3 4.5v5L10.5 17l6.5-6.5L9.5 3z"/><circle cx="6.8" cy="6.8" r="1"/></svg></span>Pricing</button>
+      <button class="nbtn" data-page="pricing"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3H4.5A1.5 1.5 0 0 0 3 4.5v5L10.5 17l6.5-6.5L9.5 3z"/><circle cx="6.8" cy="6.8" r="1"/></svg></span>Pricing</button>
       <button class="nbtn" data-page="reminders"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 18a2 2 0 0 0 3 0"/><path d="M15 9A5 5 0 0 0 5 9c0 6-2.5 6-2.5 7.5h15C17.5 15 15 15 15 9z"/></svg></span>Reminders</button>
       <button class="nbtn" data-page="heart"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3l-3 3-3-3a3 3 0 1 0-4.24 4.24L10 15l5.24-4.76A3 3 0 0 0 18 3z"/></svg></span>Heart to Heart</button>
       <div class="s-bottom">
@@ -974,6 +974,46 @@ button{cursor:pointer}
       </div>
 
       <!-- PROFILE -->
+      <div class="page" id="page-pricing">
+        <div class="topbar"><div><h1>Pricing</h1><p>You're on the <strong id="billing-current">Personal</strong> plan. Upgrade for more, or manage your subscription anytime.</p></div></div>
+        <div class="plan-grid" id="plan-grid">
+          <div class="plan-card" data-plan="Personal">
+            <div class="plan-tier">Personal</div>
+            <div class="plan-price">Free</div>
+            <ul class="plan-feats">
+              <li>Unlimited personal prayers</li>
+              <li>Reminders &amp; streaks</li>
+              <li>Join prayer groups</li>
+            </ul>
+            <button class="btn btn-ghost btn-sm plan-btn" data-plan="Personal" disabled>Current plan</button>
+          </div>
+          <div class="plan-card plan-featured" data-plan="Plus">
+            <div class="plan-tier">Plus <span class="plan-pop">Popular</span></div>
+            <div class="plan-price">$7.99<span>/mo</span></div>
+            <ul class="plan-feats">
+              <li>Everything in Personal</li>
+              <li>Prayer Letter generator</li>
+              <li>Weekly email digest</li>
+            </ul>
+            <button class="btn btn-primary btn-sm plan-btn" data-plan="Plus">Upgrade to Plus</button>
+          </div>
+          <div class="plan-card" data-plan="Church">
+            <div class="plan-tier">Church</div>
+            <div class="plan-price">$29.99<span>/mo</span></div>
+            <ul class="plan-feats">
+              <li>Everything in Plus</li>
+              <li>Create fundraising causes</li>
+              <li>Confession request inbox</li>
+              <li>Leader dashboard &amp; group tools</li>
+            </ul>
+            <button class="btn btn-primary btn-sm plan-btn" data-plan="Church">Upgrade to Church</button>
+          </div>
+        </div>
+        <div class="save-row" style="justify-content:space-between;align-items:center;margin-top:18px">
+          <span style="font-size:12px;color:var(--muted)">Secure payments by Stripe. Cancel anytime.</span>
+          <button class="btn btn-ghost btn-sm" id="manage-billing">Manage Billing</button>
+        </div>
+      </div>
       <div class="page" id="page-profile">
         <div class="topbar"><div><h1>My Profile</h1><p>Manage your account, preferences, and data.</p></div></div>
         <div class="profile-layout">
@@ -996,48 +1036,6 @@ button{cursor:pointer}
           </div>
           <!-- RIGHT SECTIONS -->
           <div class="profile-sections">
-            <!-- Plans & Billing -->
-            <div class="psection" id="billing-section">
-              <h3>Plans &amp; Billing</h3>
-              <p class="desc">You're on the <strong id="billing-current">Personal</strong> plan. Upgrade for more, or manage your subscription anytime.</p>
-              <div class="plan-grid" id="plan-grid">
-                <div class="plan-card" data-plan="Personal">
-                  <div class="plan-tier">Personal</div>
-                  <div class="plan-price">Free</div>
-                  <ul class="plan-feats">
-                    <li>Unlimited personal prayers</li>
-                    <li>Reminders &amp; streaks</li>
-                    <li>Join prayer groups</li>
-                  </ul>
-                  <button class="btn btn-ghost btn-sm plan-btn" data-plan="Personal" disabled>Current plan</button>
-                </div>
-                <div class="plan-card plan-featured" data-plan="Plus">
-                  <div class="plan-tier">Plus <span class="plan-pop">Popular</span></div>
-                  <div class="plan-price">$7.99<span>/mo</span></div>
-                  <ul class="plan-feats">
-                    <li>Everything in Personal</li>
-                    <li>Prayer Letter generator</li>
-                    <li>Weekly email digest</li>
-                  </ul>
-                  <button class="btn btn-primary btn-sm plan-btn" data-plan="Plus">Upgrade to Plus</button>
-                </div>
-                <div class="plan-card" data-plan="Church">
-                  <div class="plan-tier">Church</div>
-                  <div class="plan-price">$29.99<span>/mo</span></div>
-                  <ul class="plan-feats">
-                    <li>Everything in Plus</li>
-                    <li>Create fundraising causes</li>
-                    <li>Confession request inbox</li>
-                    <li>Leader dashboard &amp; group tools</li>
-                  </ul>
-                  <button class="btn btn-primary btn-sm plan-btn" data-plan="Church">Upgrade to Church</button>
-                </div>
-              </div>
-              <div class="save-row" style="justify-content:space-between;align-items:center">
-                <span style="font-size:12px;color:var(--muted)">Secure payments by Stripe. Cancel anytime.</span>
-                <button class="btn btn-ghost btn-sm" id="manage-billing">Manage Billing</button>
-              </div>
-            </div>
             <!-- Edit profile -->
             <div class="psection">
               <h3>Edit Profile</h3>
@@ -1736,7 +1734,7 @@ async function handleBillingReturn(){
   }
   await refresh();
   setTimeout(refresh,4000);   // second pass in case the webhook was slightly behind
-  showPage('profile');
+  showPage('pricing');
 }
 
 function updateSidebarUser(){
@@ -1764,6 +1762,7 @@ function showPage(name){
   if(name==='heart'){renderChat();setTimeout(()=>{const m=document.getElementById('chat-msgs');m.scrollTop=m.scrollHeight;},50);}
   if(name==='confession')renderConfession();
   if(name==='donate')renderDonate();
+  if(name==='pricing')renderBilling();
 }
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 
@@ -2280,8 +2279,7 @@ function requirePlan(level){
   if(ok)return true;
   const need = level==='church' ? 'Church' : 'Plus';
   toast('This is a '+need+' feature. Opening Plans & Billing to upgrade.');
-  showPage('profile');
-  setTimeout(()=>document.getElementById('billing-section')?.scrollIntoView({behavior:'smooth',block:'center'}),150);
+  showPage('pricing');
   return false;
 }
 function renderBilling(){
