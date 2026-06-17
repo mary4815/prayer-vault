@@ -640,9 +640,8 @@ button{cursor:pointer}
         <div class="connect-banner">
           <span class="cb-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M21 11.5a8.4 8.4 0 0 1-1.2 4.4L21 20l-4.3-1.1a8.5 8.5 0 1 1 4.3-7.4Z"/></svg></span>
           <div>
-            <strong>WhatsApp Reminders — Coming Soon</strong>
-            <p>On your follow-up day, you'll receive a WhatsApp message with the person's name and what you were praying for. <a href="#" onclick="showPage('reminders');return false;" style="color:#fff;text-decoration:underline">See a preview</a>.</p>
-            <button class="wa-connect-btn" onclick="toast('WhatsApp connection coming in the full app!')">Connect WhatsApp →</button>
+            <strong>Email Reminders</strong>
+            <p>On your follow-up day, you'll receive an email with the person's name and what you were praying for. <a href="#" onclick="showPage('reminders');return false;" style="color:#fff;text-decoration:underline">See a preview</a>.</p>
           </div>
         </div>
         <div class="stats-row">
@@ -1005,7 +1004,7 @@ button{cursor:pointer}
                 </div>
                 <div class="plan-card" data-plan="Church">
                   <div class="plan-tier">Church</div>
-                  <div class="plan-price">$19.99<span>/mo</span></div>
+                  <div class="plan-price">$29.99<span>/mo</span></div>
                   <ul class="plan-feats">
                     <li>Everything in Plus</li>
                     <li>Create fundraising causes</li>
@@ -1059,7 +1058,7 @@ button{cursor:pointer}
                 <span class="pfm-link" id="pfm-link">prayervault.app/pray-for/—</span>
                 <button class="btn btn-ghost btn-sm" id="copy-pfm">Copy Link</button>
               </div>
-              <p style="font-size:12px;color:var(--muted)">Share this in your church WhatsApp group or small group chat. Every person who submits a request becomes a potential user.</p>
+              <p style="font-size:12px;color:var(--muted)">Share this in your church group or small group chat. Every person who submits a request becomes a potential user.</p>
             </div>
             <!-- Prayer Letter -->
             <div class="psection">
@@ -1111,9 +1110,8 @@ button{cursor:pointer}
         <div class="connect-banner">
           <span class="cb-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M21 11.5a8.4 8.4 0 0 1-1.2 4.4L21 20l-4.3-1.1a8.5 8.5 0 1 1 4.3-7.4Z"/></svg></span>
           <div>
-            <strong>WhatsApp Reminders — Coming Soon</strong>
-            <p>On your follow-up day, you'll receive a WhatsApp message with the person's name and what you were praying for. Below is a preview of what each message will look like.</p>
-            <button class="wa-connect-btn" onclick="toast('WhatsApp connection coming in the full app!')">Connect WhatsApp →</button>
+            <strong>Email Reminders</strong>
+            <p>On your follow-up day, you'll receive an email with the person's name and what you were praying for. Below is a preview of what each message will look like.</p>
           </div>
         </div>
         <div class="rem-layout">
@@ -2238,15 +2236,15 @@ const PAID_PLANS=['Plus','Church'];
 function currentPlan(){ return (currentUser&&currentUser.plan)||'Personal'; }
 function isPaid(){ return PAID_PLANS.includes(currentPlan()); }
 function isChurch(){ return currentPlan()==='Church'; }
-// Send a real email / WhatsApp via the billing server's /api/notify.
+// Send a real email via the billing server's /api/notify.
 // Safe by design: if we're offline, or the server's Resend/Twilio keys aren't
 // turned on yet, it resolves {ok:false} instead of throwing — so the feature
 // that called it still works locally and starts delivering the moment keys land.
-async function notify({ email, whatsapp, subject, message }){
+async function notify({ email, subject, message }){
   if(!useSupa())return { ok:false, reason:'offline' };
   try{
     const { data:{ session } }=await supa.auth.getSession();
-    const res=await fetch(API_BASE+'/api/notify',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')},body:JSON.stringify({ email, whatsapp, subject, message })});
+    const res=await fetch(API_BASE+'/api/notify',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')},body:JSON.stringify({ email, subject, message })});
     if(!res.ok)return { ok:false, reason:'server' };
     return await res.json();
   }catch(e){ return { ok:false, reason:'network' }; }
@@ -3077,12 +3075,11 @@ document.getElementById('cf-send')?.addEventListener('click',async ()=>{
   document.getElementById('cf-msg').value='';
   document.getElementById('cf-reach').value='';
   renderConfession();
-  // Deliver a real confirmation to the sender via their own reach (email or WhatsApp).
+  // Deliver a real confirmation to the sender via email when they left one.
   const isEmail=reach.includes('@');
   const body=`Your private request to ${priest} has been received.\n\n${contact}${msg?'\n\nYour message: '+msg:''}\n\nThey will reach you using your preferred method.`;
   const r=await notify({
     email: isEmail?reach:undefined,
-    whatsapp: (!isEmail && /\d/.test(reach))?reach:undefined,
     subject:'Prayer Vault — your private request was received',
     message:body,
   });
@@ -3328,7 +3325,7 @@ function renderReminders(){
       this.disabled=true;
       const r=await notify({ email:currentUser.email, subject:`Prayer follow-up: ${p.person}`, message:msg });
       this.disabled=false;
-      toast(r&&r.ok?'Reminder sent to your email.':'Reminder ready — it will deliver once email/WhatsApp keys are added.');
+      toast(r&&r.ok?'Reminder sent to your email.':'Reminder ready — it will deliver once email keys are added.');
     });
   });
 }
