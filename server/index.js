@@ -193,6 +193,7 @@ app.post('/api/subscribe/checkout', requireUser, async (req, res) => {
     const customer = await getOrCreateCustomer(req.user);
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
+      payment_method_types: ['card'],
       customer,
       client_reference_id: req.user.id,
       line_items: [{ price, quantity: 1 }],
