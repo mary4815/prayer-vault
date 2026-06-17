@@ -1710,7 +1710,8 @@ async function launchApp(user){
   renderAll();renderReminders();renderChat();renderWall();
   const sk=getStreak(currentUser.id);renderStreak(sk);
   renderAnniversaries();
-  showPage('today');
+  let startPage='today'; try{ const lp=localStorage.getItem('pmv_page'); if(lp && document.getElementById('page-'+lp)) startPage=lp; }catch(e){}
+  showPage(startPage); // return to the page you were on before refresh
   setTimeout(showOnboarding,400);
   handleBillingReturn();
 }
@@ -1749,6 +1750,8 @@ function updateSidebarUser(){
 
 // ═══ NAVIGATION ═══
 function showPage(name){
+  if(!document.getElementById('page-'+name)) name='today';
+  try{ localStorage.setItem('pmv_page', name); }catch(e){} // remember the page so refresh stays put
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.nbtn,[data-page]').forEach(b=>b.classList&&b.classList.toggle('active',b.dataset.page===name));
