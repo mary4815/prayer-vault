@@ -1569,7 +1569,7 @@ function showAuthErr(msg){const e=document.getElementById('auth-err');e.textCont
 /* ── Supabase backend config — paste your keys here (see prayer-vault/SETUP.md) ── */
 const SUPABASE_URL = 'https://xuueoawkkjtjqgcsapiu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1dWVvYXdra2p0anFnY3NhcGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MjQ1NzgsImV4cCI6MjA5NzIwMDU3OH0.z5jny7Ogucn-Duve2XNCOK-VQmSEqxMzxjlXzdzkBfk';
-const API_BASE = 'http://localhost:8787';
+const API_BASE = 'https://prayer-vault.onrender.com';
 const SUPA_READY = /^https:\/\/.+\.supabase\.co\/?$/.test(SUPABASE_URL) && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith('YOUR');
 let supa = (SUPA_READY && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
