@@ -72,7 +72,7 @@ Get an **email the moment** someone submits a confession request or makes a dona
 
 ## 6. Paid subscriptions (Plus / Church)
 
-Three tiers: **Personal** (free), **Plus** ($4.99/mo), **Church** ($14.99/mo). Stripe handles the money; the server syncs the plan back to Supabase.
+Three tiers: **Personal** (free), **Plus** ($7.99/mo), **Church** ($19.99/mo). Stripe handles the money; the server syncs the plan back to Supabase.
 
 1. Stripe Dashboard → **Products** → create two products, each with a **recurring monthly Price**:
    - *Prayer Vault Plus* → copy its price id into `STRIPE_PRICE_PLUS`.

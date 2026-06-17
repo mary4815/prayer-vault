@@ -240,6 +240,19 @@ button{cursor:pointer}
 .plan-feats li{font-size:12.5px;color:var(--muted);padding-left:18px;position:relative;line-height:1.4}
 .plan-feats li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:50%;background:var(--sage);opacity:.85}
 .plan-btn{width:100%}
+/* ── CHURCH LEADER DASHBOARD ── */
+.leader-head{display:flex;align-items:center;gap:10px;margin-top:4px}
+.leader-head h2{font-size:18px;font-weight:800;margin:0}
+.leader-badge{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:linear-gradient(135deg,#f0d070,#b8a040);color:#3a2808;padding:3px 9px;border-radius:10px}
+.leader-card{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;background:var(--card)}
+.leader-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.leader-card-top h3{margin:0 0 2px;font-size:15px}
+.lm-list{display:flex;flex-direction:column;gap:6px;margin:8px 0 12px}
+.lm-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--line);border-radius:10px}
+.lm-av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;background:var(--sage-l);color:var(--sage)}
+.lm-info{flex:1;display:flex;align-items:center;gap:8px;font-size:13px}
+.lm-tag{font-size:9px;font-weight:800;text-transform:uppercase;background:var(--sage);color:#fff;padding:2px 7px;border-radius:8px}
+.leader-actions{display:flex;gap:8px;flex-wrap:wrap}
 .profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
 .ps{background:var(--bg);border-radius:8px;padding:12px;text-align:center}
 .ps .n{font-size:22px;font-weight:800;color:var(--sage)}
@@ -882,6 +895,8 @@ button{cursor:pointer}
           <button class="btn btn-ghost btn-sm" id="join-group-btn">Join with Code</button>
         </div>
         <div class="ggrid" id="groups-container"></div>
+        <!-- CHURCH LEADER DASHBOARD (Church tier only) -->
+        <div id="leader-dash" style="display:none;margin-top:28px"></div>
         <!-- GROUP PRAYER WALL -->
         <div style="margin-top:28px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -980,23 +995,22 @@ button{cursor:pointer}
                 </div>
                 <div class="plan-card plan-featured" data-plan="Plus">
                   <div class="plan-tier">Plus <span class="plan-pop">Popular</span></div>
-                  <div class="plan-price">$4.99<span>/mo</span></div>
+                  <div class="plan-price">$7.99<span>/mo</span></div>
                   <ul class="plan-feats">
                     <li>Everything in Personal</li>
                     <li>Prayer Letter generator</li>
                     <li>Weekly email digest</li>
-                    <li>Priority spiritual letters</li>
                   </ul>
                   <button class="btn btn-primary btn-sm plan-btn" data-plan="Plus">Upgrade to Plus</button>
                 </div>
                 <div class="plan-card" data-plan="Church">
                   <div class="plan-tier">Church</div>
-                  <div class="plan-price">$14.99<span>/mo</span></div>
+                  <div class="plan-price">$19.99<span>/mo</span></div>
                   <ul class="plan-feats">
                     <li>Everything in Plus</li>
                     <li>Create fundraising causes</li>
                     <li>Confession request inbox</li>
-                    <li>Group leader tools</li>
+                    <li>Leader dashboard &amp; group tools</li>
                   </ul>
                   <button class="btn btn-primary btn-sm plan-btn" data-plan="Church">Upgrade to Church</button>
                 </div>
@@ -2224,6 +2238,19 @@ const PAID_PLANS=['Plus','Church'];
 function currentPlan(){ return (currentUser&&currentUser.plan)||'Personal'; }
 function isPaid(){ return PAID_PLANS.includes(currentPlan()); }
 function isChurch(){ return currentPlan()==='Church'; }
+// Send a real email / WhatsApp via the billing server's /api/notify.
+// Safe by design: if we're offline, or the server's Resend/Twilio keys aren't
+// turned on yet, it resolves {ok:false} instead of throwing — so the feature
+// that called it still works locally and starts delivering the moment keys land.
+async function notify({ email, whatsapp, subject, message }){
+  if(!useSupa())return { ok:false, reason:'offline' };
+  try{
+    const { data:{ session } }=await supa.auth.getSession();
+    const res=await fetch(API_BASE+'/api/notify',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')},body:JSON.stringify({ email, whatsapp, subject, message })});
+    if(!res.ok)return { ok:false, reason:'server' };
+    return await res.json();
+  }catch(e){ return { ok:false, reason:'network' }; }
+}
 // Gate a premium feature. Cloud accounts must hold the required plan; the
 // offline localStorage demo stays unrestricted so the demo still works.
 function requirePlan(level){
@@ -2341,13 +2368,28 @@ document.getElementById('save-password').addEventListener('click',async ()=>{
   toast('Password updated successfully.');
 });
 
-document.getElementById('save-prefs').addEventListener('click',()=>{
+document.getElementById('save-prefs').addEventListener('click',async ()=>{
   const prefs=getPrefs(currentUser.id);
   prefs.remind=document.getElementById('pref-remind').checked;
-  prefs.digest=document.getElementById('pref-digest').checked;
+  const wantsDigest=document.getElementById('pref-digest').checked;
+  // Weekly email digest is a Plus feature (cloud accounts only; demo stays open).
+  if(wantsDigest && useSupa() && !isPaid()){
+    document.getElementById('pref-digest').checked=false;
+    prefs.digest=false; prefs.prompts=document.getElementById('pref-prompts').checked;
+    savePrefs(currentUser.id,prefs);
+    requirePlan('paid');   // shows the upgrade toast + opens Plans & Billing
+    return;
+  }
+  prefs.digest=wantsDigest;
   prefs.prompts=document.getElementById('pref-prompts').checked;
   savePrefs(currentUser.id,prefs);
   toast('Preferences saved.');
+  // Just turned the digest on? Send this week's digest now as a real first send.
+  if(wantsDigest){
+    const active=prayers.filter(p=>!p.answered);
+    const lines=active.slice(0,12).map(p=>`• ${p.person}: ${p.request.slice(0,80)}`).join('\n')||'No active prayers this week.';
+    notify({ email:currentUser.email, subject:'Your Prayer Vault weekly digest', message:`Hi ${currentUser.first},\n\nHere is your prayer list this week:\n\n${lines}\n\nKeep praying — Prayer Vault.` });
+  }
 });
 
 document.getElementById('export-data')?.addEventListener('click',()=>{
@@ -2787,6 +2829,98 @@ function renderGroups(){
       </div>`).join('')+createCard;
   }
   document.getElementById('ggrid-create-btn')?.addEventListener('click',openCreateGroupModal);
+  renderLeaderDashboard();
+}
+// ═══ CHURCH LEADER DASHBOARD (Church tier) ═══
+// Distinct from Free/Plus: only Church-tier members get group-management tools.
+async function fetchGroupMembers(groupId){
+  if(!useSupa())return null;
+  try{
+    const { data, error }=await supa.rpc('group_members_for_owner',{ p_group:groupId });
+    if(error)throw error;
+    return data||[];
+  }catch(e){ syncErr(e); return []; }
+}
+async function removeMember(groupId,userId){
+  if(userId===currentUser.id){ toast("You're the leader — delete the group instead of removing yourself."); return; }
+  if(!confirm('Remove this member from the group?'))return;
+  if(useSupa()){
+    try{ const r=await supa.from('group_members').delete().eq('group_id',groupId).eq('user_id',userId); if(r.error)throw r.error; toast('Member removed.'); }catch(e){ syncErr(e); return; }
+  }else{
+    const groups=getGroups(currentUser.id); const g=groups.find(x=>x.id===groupId);
+    if(g){ g.members=(g.members||[]).filter(m=>(m.id||m)!==userId); saveGroups(currentUser.id,groups); toast('Member removed.'); }
+  }
+  renderLeaderDashboard(); renderGroups();
+}
+async function renameGroup(groupId){
+  const g=getGroups(currentUser.id).find(x=>x.id===groupId); if(!g)return;
+  const name=prompt('Group name:',g.name); if(name===null)return;
+  const desc=prompt('Description:',g.desc||''); if(desc===null)return;
+  const newName=(name.trim()||g.name), newDesc=desc.trim();
+  if(useSupa()){
+    try{ const r=await supa.from('groups').update({ name:newName, description:newDesc }).eq('id',groupId); if(r.error)throw r.error; }catch(e){ syncErr(e); return; }
+  }
+  g.name=newName; g.desc=newDesc;
+  if(!useSupa()){ const groups=getGroups(currentUser.id); const i=groups.findIndex(x=>x.id===groupId); if(i>-1){ groups[i]=g; saveGroups(currentUser.id,groups); } }
+  toast('Group updated.'); renderLeaderDashboard(); renderGroups();
+}
+async function deleteGroupAsOwner(groupId){
+  if(!confirm('Delete this group for everyone? This cannot be undone.'))return;
+  if(useSupa()){
+    try{ const r=await supa.from('groups').delete().eq('id',groupId); if(r.error)throw r.error; cache.groups=cache.groups.filter(g=>g.id!==groupId); }catch(e){ syncErr(e); return; }
+  }else{
+    saveGroups(currentUser.id,getGroups(currentUser.id).filter(g=>g.id!==groupId));
+  }
+  toast('Group deleted.'); renderLeaderDashboard(); renderGroups();
+}
+async function postAnnouncement(groupId){
+  const text=prompt('Announcement to post to the group wall:'); if(text===null)return;
+  if(!text.trim()){ toast('Write something first.'); return; }
+  const body='📢 '+text.trim();
+  if(useSupa()){
+    try{ const r=await supa.from('wall_posts').insert({ group_id:groupId, author_id:currentUser.id, name:currentUser.first+' '+(currentUser.last||''), text:body }); if(r.error)throw r.error; }catch(e){ syncErr(e); return; }
+  }
+  toast('Announcement posted to the group wall.');
+  if(typeof renderWall==='function')renderWall();
+}
+async function renderLeaderDashboard(){
+  const el=document.getElementById('leader-dash'); if(!el)return;
+  if(!isChurch()){ el.style.display='none'; el.innerHTML=''; return; }   // Church tier only
+  el.style.display='block';
+  const owned=getGroups(currentUser.id).filter(g=>g.owner===currentUser.id);
+  const head=`<div class="leader-head"><h2>Leader Dashboard</h2><span class="leader-badge">Church</span></div>`;
+  if(!owned.length){
+    el.innerHTML=head+`<p class="desc" style="margin-top:6px">Create a group and you'll manage its members, announcements, and settings here.</p>`;
+    return;
+  }
+  let html=head+`<p class="desc" style="margin:6px 0 14px">Manage the groups you lead — members, announcements, and settings.</p>`;
+  for(const g of owned){
+    const members = useSupa()
+      ? (await fetchGroupMembers(g.id))
+      : (g.members||[]).map(m=>({ user_id:(m.id||m), name:(m.name||'Member') }));
+    const rows=(members||[]).map(m=>{
+      const isLeader=m.user_id===currentUser.id;
+      const nm=m.name||'Member';
+      return `<div class="lm-row">
+        <div class="lm-av">${escape(initials(nm))}</div>
+        <div class="lm-info"><strong>${escape(nm)}</strong>${isLeader?'<span class="lm-tag">Leader</span>':''}</div>
+        ${isLeader?'':`<button class="btn btn-ghost btn-sm" onclick="removeMember('${g.id}','${m.user_id}')">Remove</button>`}
+      </div>`;
+    }).join('');
+    html+=`<div class="leader-card">
+      <div class="leader-card-top">
+        <div><h3>${escape(g.name)}</h3><p class="desc">${escape(g.desc||'No description')}</p></div>
+        <span class="tag t-cat">Code: ${escape(g.code||'—')}</span>
+      </div>
+      <div class="lm-list">${rows||'<p class="desc" style="margin:0">No members have joined yet.</p>'}</div>
+      <div class="leader-actions">
+        <button class="btn btn-primary btn-sm" onclick="postAnnouncement('${g.id}')">📢 Announce</button>
+        <button class="btn btn-ghost btn-sm" onclick="renameGroup('${g.id}')">Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteGroupAsOwner('${g.id}')" style="color:#c0392b">Delete</button>
+      </div>
+    </div>`;
+  }
+  el.innerHTML=html;
 }
 function openCreateGroupModal(){
   const nameEl=document.getElementById('f-group-name');
@@ -2926,7 +3060,8 @@ function renderConfession(){
     </div>`;
   }).join('');
 }
-document.getElementById('cf-send')?.addEventListener('click',()=>{
+document.getElementById('cf-send')?.addEventListener('click',async ()=>{
+  if(!requirePlan('church'))return;   // Confession request inbox is a Church feature
   const priest=document.getElementById('cf-priest').value;
   const method=document.getElementById('cf-contact').value;
   const name=(document.getElementById('cf-name').value||'').trim()||(currentUser.first+' '+(currentUser.last||'')).trim();
@@ -2941,8 +3076,17 @@ document.getElementById('cf-send')?.addEventListener('click',()=>{
   saveConfessions(currentUser.id,items);
   document.getElementById('cf-msg').value='';
   document.getElementById('cf-reach').value='';
-  toast('Your private request has been sent.');
   renderConfession();
+  // Deliver a real confirmation to the sender via their own reach (email or WhatsApp).
+  const isEmail=reach.includes('@');
+  const body=`Your private request to ${priest} has been received.\n\n${contact}${msg?'\n\nYour message: '+msg:''}\n\nThey will reach you using your preferred method.`;
+  const r=await notify({
+    email: isEmail?reach:undefined,
+    whatsapp: (!isEmail && /\d/.test(reach))?reach:undefined,
+    subject:'Prayer Vault — your private request was received',
+    message:body,
+  });
+  toast(r&&r.ok?'Your request was sent — a confirmation is on its way.':'Your private request has been saved and sent.');
 });
 
 // ═══ DONATE ═══
@@ -3171,10 +3315,22 @@ function renderReminders(){
       </div>
       <div class="rem-actions">
         <span class="tag t-cat">${escape(p.category)}</span>
-        <button class="btn btn-ghost btn-sm" onclick="toast('Reminder preview — WhatsApp connection coming soon!')">Preview</button>
+        <button class="btn btn-ghost btn-sm" data-remind="${escape(String(p.id))}">Send to me now</button>
       </div>
     </div>`;
   }).join('');
+  // Real send: email the follow-up reminder to the signed-in user via /api/notify.
+  list.querySelectorAll('[data-remind]').forEach(btn=>{
+    btn.addEventListener('click',async function(){
+      const p=active.find(x=>String(x.id)===String(this.dataset.remind));
+      if(!p)return;
+      const msg=`Hi ${currentUser.first}! Today is your follow-up for ${p.person}. You've been praying: "${p.request.slice(0,120)}". How is ${p.person.split(' ')[0]} doing? Would you like to reach out today?`;
+      this.disabled=true;
+      const r=await notify({ email:currentUser.email, subject:`Prayer follow-up: ${p.person}`, message:msg });
+      this.disabled=false;
+      toast(r&&r.ok?'Reminder sent to your email.':'Reminder ready — it will deliver once email/WhatsApp keys are added.');
+    });
+  });
 }
 
 // ═══ HEART TO HEART ═══

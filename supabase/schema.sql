@@ -315,3 +315,52 @@ $$;
 drop policy if exists "causes create" on public.causes;
 create policy "causes create" on public.causes for insert
   with check (auth.uid() = created_by and public.user_is_church(auth.uid()));
+
+-- =====================================================================
+-- v19 confession inbox = Church-tier (DB enforcement, safe to re-run)
+-- =====================================================================
+-- The confession request inbox is a Church feature. Mirror the causes lock:
+-- owner-only access for read/update/delete, but INSERT also requires the
+-- Church plan — so a free user can't bypass the UI and write a request.
+-- Existing rows stay readable if a user later downgrades.
+drop policy if exists "own confessions" on public.confessions;
+drop policy if exists "confessions sel" on public.confessions;
+drop policy if exists "confessions upd" on public.confessions;
+drop policy if exists "confessions del" on public.confessions;
+drop policy if exists "confessions create" on public.confessions;
+create policy "confessions sel" on public.confessions for select using (auth.uid() = user_id);
+create policy "confessions upd" on public.confessions for update using (auth.uid() = user_id);
+create policy "confessions del" on public.confessions for delete using (auth.uid() = user_id);
+create policy "confessions create" on public.confessions for insert
+  with check (auth.uid() = user_id and public.user_is_church(auth.uid()));
+
+-- =====================================================================
+-- v20 church leader dashboard (Church-tier group tools, safe to re-run)
+-- =====================================================================
+-- A group OWNER needs to see and manage their members. Member names live in
+-- profiles, which is self-only, so this security-definer function returns the
+-- member list ONLY for groups the caller actually owns. Church-tier gating is
+-- enforced in the UI; ownership is enforced here.
+create or replace function public.group_members_for_owner(p_group uuid)
+returns table(user_id uuid, name text, joined_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select gm.user_id,
+         coalesce(
+           nullif(trim(coalesce(p.first_name,'')||' '||coalesce(p.last_name,'')), ''),
+           p.email, 'Member'
+         ) as name,
+         gm.joined_at
+  from public.group_members gm
+  left join public.profiles p on p.id = gm.user_id
+  where gm.group_id = p_group
+    and exists (select 1 from public.groups g
+                where g.id = p_group and g.owner = auth.uid())
+  order by gm.joined_at;
+$$;
+
+-- Let a group owner remove any member of their own group (the existing
+-- "members leave" policy only allows a member to remove themselves).
+drop policy if exists "members owner remove" on public.group_members;
+create policy "members owner remove" on public.group_members for delete
+  using (exists (select 1 from public.groups g
+                 where g.id = group_members.group_id and g.owner = auth.uid()));
