@@ -364,3 +364,12 @@ drop policy if exists "members owner remove" on public.group_members;
 create policy "members owner remove" on public.group_members for delete
   using (exists (select 1 from public.groups g
                  where g.id = group_members.group_id and g.owner = auth.uid()));
+
+-- =====================================================================
+-- v21 giving causes: creator name + optional ending date (safe to re-run)
+-- =====================================================================
+-- The donate cards show who started a cause and (optionally) when it ends.
+-- created_by_name is a denormalised display name (profiles is self-only RLS,
+-- so the browser can't read another creator's name directly).
+alter table public.causes add column if not exists created_by_name text;
+alter table public.causes add column if not exists deadline date;

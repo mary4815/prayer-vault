@@ -1,0 +1,21 @@
+name: Keep backend awake
+
+# Render's free tier sleeps after ~15 min idle and cold-starts (20-50s) on the
+# next request — that was the 20-30s freeze on Upgrade / Donate. This pings the
+# health endpoint every ~10 minutes so the billing/donation server stays warm
+# and checkout is instant. (GitHub disables scheduled workflows after 60 days
+# of repo inactivity — push any commit to re-enable.)
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/health
+        run: |
+          curl -fsS --max-time 60 https://prayer-vault.onrender.com/api/health > /dev/null \
+            && echo "Backend is awake" \
+            || echo "Ping failed (server may be cold-starting) — will retry next cycle"

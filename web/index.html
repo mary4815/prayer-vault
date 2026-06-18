@@ -1351,6 +1351,7 @@ button{cursor:pointer}
     <div class="field"><label>Cause Name *</label><input id="f-cause-name" placeholder="e.g. Mission Trip to Kenya"/></div>
     <div class="field"><label>Description</label><textarea id="f-cause-desc" rows="3" placeholder="What is this donation for? (optional)"></textarea></div>
     <div class="field"><label>Goal Amount ($) *</label><input id="f-cause-goal" type="number" min="1" placeholder="1000"/></div>
+    <div class="field"><label>Ending Date <span style="font-weight:400;text-transform:none;font-size:11px">(optional)</span></label><input id="f-cause-deadline" type="date"/></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="cause-modal-cancel">Cancel</button>
       <button class="btn btn-primary" id="cause-modal-save">Create Cause</button>
@@ -1480,7 +1481,7 @@ async function loadAllData(uid){
     cache.prefs=pf.data?{remind:pf.data.remind!==false,digest:!!pf.data.digest,prompts:pf.data.prompts!==false,colorIdx:pf.data.color_idx||0}:{remind:true,digest:false,prompts:true,colorIdx:0};
     cache.streak=sk.data?{current:sk.data.current||0,best:sk.data.longest||0,history:sk.data.days||[]}:{current:0,best:0,history:[]};
     cache.confessions=(cf.data||[]).map(MAP.confessions.from);synced.confessions=cache.confessions.map(x=>String(x.id));
-    cache.causes=(ca.data||[]).map(r=>({id:r.id,name:r.name,desc:r.description||'',goal:Number(r.goal)||0,raised:Number(r.raised)||0,creator:''}));
+    cache.causes=(ca.data||[]).map(r=>({id:r.id,name:r.name,desc:r.description||'',goal:Number(r.goal)||0,raised:Number(r.raised)||0,creator:r.created_by_name||'',deadline:r.deadline||''}));
     const {data:mem}=await supa.from('group_members').select('group_id').eq('user_id',uid);
     const gids=(mem||[]).map(m=>m.group_id);
     let groups=[];
@@ -1594,6 +1595,26 @@ const API_BASE = 'https://prayer-vault.onrender.com';
 const SUPA_READY = /^https:\/\/.+\.supabase\.co\/?$/.test(SUPABASE_URL) && !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith('YOUR');
 let supa = (SUPA_READY && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
+// Render's free tier sleeps after ~15 min idle and cold-starts on the next
+// request (20-50s). Ping /api/health in the background to wake the billing
+// server BEFORE the user clicks Upgrade/Donate, so checkout feels instant
+// instead of frozen. Throttled so navigation doesn't spam it.
+let _warmedAt=0;
+function warmBackend(){
+  if(!API_BASE)return;
+  if(Date.now()-_warmedAt<60000)return;   // at most once a minute
+  _warmedAt=Date.now();
+  try{ fetch(API_BASE+'/api/health',{cache:'no-store'}).catch(()=>{}); }catch(e){}
+}
+// Give a button an immediate "working" state so a slow network call never
+// looks like a frozen UI. Returns a restore() to call when done.
+function btnLoading(btn,label){
+  if(!btn)return ()=>{};
+  const orig=btn.textContent, wasDisabled=btn.disabled;
+  btn.disabled=true; btn.textContent=label||'Working…';
+  return ()=>{ btn.disabled=wasDisabled; btn.textContent=orig; };
+}
+
 // Build the app's user object from a Supabase auth user + their profile row.
 async function onAuthed(sbUser){
   let prof={};
@@ -1694,6 +1715,8 @@ async function launchApp(user){
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   updateSidebarUser();
+  warmBackend();   // wake the billing server early so checkout isn't a cold-start freeze
+  if(!window._keepAlive)window._keepAlive=setInterval(warmBackend,10*60*1000);   // keep it warm while the tab is open
   let startPage='today'; try{ const lp=localStorage.getItem('pmv_page'); if(lp && document.getElementById('page-'+lp)) startPage=lp; }catch(e){}
   showPage(startPage); // restore the page you were on, instantly
   // Now load data (may hit the network) and fill in content afterwards.
@@ -1765,8 +1788,8 @@ function showPage(name){
   if(name==='profile'){populateProfileForm();setupProfileExtras();}
   if(name==='heart'){renderChat();setTimeout(()=>{const m=document.getElementById('chat-msgs');m.scrollTop=m.scrollHeight;},50);}
   if(name==='confession')renderConfession();
-  if(name==='donate')renderDonate();
-  if(name==='pricing')renderBilling();
+  if(name==='donate'){ warmBackend(); renderDonate(); }
+  if(name==='pricing'){ warmBackend(); renderBilling(); }
 }
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 
@@ -2301,8 +2324,10 @@ function renderBilling(){
     else { btn.disabled=false; btn.classList.add('btn-primary'); btn.classList.remove('btn-ghost'); btn.textContent='Upgrade to '+p; }
   });
 }
-async function startUpgrade(plan){
+async function startUpgrade(plan,btn){
   if(!useSupa()){ toast('Connect Supabase + the billing server to enable paid plans — see SETUP.md.'); return; }
+  const done=btnLoading(btn,'Connecting…');
+  toast('Starting secure checkout — this can take a few seconds…');
   try{
     const { data:{ session } }=await supa.auth.getSession();
     const res=await fetch(API_BASE+'/api/subscribe/checkout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')},body:JSON.stringify({plan})});
@@ -2310,9 +2335,12 @@ async function startUpgrade(plan){
     const txt=await res.text().catch(()=>'');
     alert('Upgrade failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''));
   }catch(e){ alert('Upgrade error: '+((e&&e.message)||e)); }
+  finally{ done(); }
 }
-async function openBillingPortal(){
+async function openBillingPortal(btn){
   if(!useSupa()){ toast('Connect Supabase + the billing server first — see SETUP.md.'); return; }
+  const done=btnLoading(btn,'Opening…');
+  toast('Opening your billing portal — this can take a few seconds…');
   try{
     const { data:{ session } }=await supa.auth.getSession();
     const res=await fetch(API_BASE+'/api/billing/portal',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')}});
@@ -2320,14 +2348,15 @@ async function openBillingPortal(){
     const txt=await res.text().catch(()=>'');
     alert('Manage Billing failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''));
   }catch(e){ alert('Manage Billing error: '+((e&&e.message)||e)); }
+  finally{ done(); }
 }
 document.getElementById('plan-grid')?.addEventListener('click',e=>{
   const btn=e.target.closest('.plan-btn'); if(!btn||btn.disabled)return;
   const plan=btn.dataset.plan;
-  if(plan==='Personal'){ openBillingPortal(); return; }   // downgrade = manage in portal
-  startUpgrade(plan);
+  if(plan==='Personal'){ openBillingPortal(btn); return; }   // downgrade = manage in portal
+  startUpgrade(plan,btn);
 });
-document.getElementById('manage-billing')?.addEventListener('click',openBillingPortal);
+document.getElementById('manage-billing')?.addEventListener('click',e=>openBillingPortal(e.currentTarget));
 
 let colorCycleIdx=0;
 document.getElementById('cycle-color').addEventListener('click',()=>{
@@ -2869,7 +2898,9 @@ async function removeMember(groupId,userId){
   if(userId===currentUser.id){ toast("You're the leader — delete the group instead of removing yourself."); return; }
   if(!confirm('Remove this member from the group?'))return;
   if(useSupa()){
-    try{ const r=await supa.from('group_members').delete().eq('group_id',groupId).eq('user_id',userId); if(r.error)throw r.error; toast('Member removed.'); }catch(e){ syncErr(e); return; }
+    try{ const r=await supa.from('group_members').delete().eq('group_id',groupId).eq('user_id',userId); if(r.error)throw r.error;
+      const g=cache.groups.find(x=>x.id===groupId); if(g&&Array.isArray(g.members)&&g.members.length>1)g.members.pop();
+      toast('Member removed.'); }catch(e){ syncErr(e); return; }
   }else{
     const groups=getGroups(currentUser.id); const g=groups.find(x=>x.id===groupId);
     if(g){ g.members=(g.members||[]).filter(m=>(m.id||m)!==userId); saveGroups(currentUser.id,groups); toast('Member removed.'); }
@@ -3132,9 +3163,14 @@ function renderDonate(){
   const causes=getCauses();
   grid.innerHTML=causes.map(c=>{
     const pct=Math.max(0,Math.min(100,Math.round((c.raised/c.goal)*100)));
+    const metaBits=[];
+    if(c.creator)metaBits.push('Created by '+escape(c.creator));
+    if(c.deadline)metaBits.push('Ends '+fmtDate(c.deadline));
+    const meta=metaBits.length?`<div style="font-size:11px;color:var(--muted);margin:2px 0 8px">${metaBits.join(' · ')}</div>`:'';
     return `<div class="gcard">
       <h3>${escape(c.name)}</h3>
       <p>${escape(c.desc||'')}</p>
+      ${meta}
       <div style="background:var(--sage-l);border-radius:8px;height:8px;overflow:hidden;margin:10px 0 6px">
         <div style="background:var(--sage);height:100%;width:${pct}%"></div>
       </div>
@@ -3153,6 +3189,9 @@ function renderDonate(){
       const list=getCauses();
       const c=list.find(x=>String(x.id)===String(this.dataset.donate));
       if(!c)return;
+      const done=btnLoading(this,'Connecting…');
+      if(useSupa())toast('Starting secure checkout — this can take a few seconds…');
+      try{
       if(useSupa()){
         // Prefer real Stripe Checkout via the server; if it isn't running yet,
         // record the gift straight to the database so the demo still works.
@@ -3180,12 +3219,13 @@ function renderDonate(){
       localStorage.setItem(dk,JSON.stringify(mine));
       toast('Thank you for your generosity! Your gift has been recorded.');
       renderDonate();
+      } finally { done(); }
     });
   });
 }
 function openCauseModal(){
   if(!requirePlan('church'))return;
-  ['f-cause-name','f-cause-desc','f-cause-goal'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['f-cause-name','f-cause-desc','f-cause-goal','f-cause-deadline'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('cause-modal-bd').classList.add('open');
   setTimeout(()=>document.getElementById('f-cause-name')?.focus(),50);
 }
@@ -3197,19 +3237,21 @@ document.getElementById('cause-modal-save')?.addEventListener('click',async ()=>
   const name=(document.getElementById('f-cause-name').value||'').trim();
   const desc=(document.getElementById('f-cause-desc').value||'').trim();
   const goal=parseFloat(document.getElementById('f-cause-goal').value);
+  const deadline=(document.getElementById('f-cause-deadline')?.value||'').trim();   // 'YYYY-MM-DD' or ''
+  const creatorName=((currentUser.first||'')+' '+(currentUser.last||'')).trim();
   if(!name){toast('Enter a cause name.');return;}
   if(!goal||goal<=0){toast('Enter a valid goal amount.');return;}
   const list=getCauses();
   if(useSupa()){
     try{
       const id=uid4();
-      const r=await supa.from('causes').insert({id,name,description:desc,goal,raised:0,created_by:currentUser.id});
+      const r=await supa.from('causes').insert({id,name,description:desc,goal,raised:0,created_by:currentUser.id,created_by_name:creatorName,deadline:deadline||null});
       if(r.error)throw r.error;
-      list.push({id,name,desc,goal,raised:0,creator:''});
+      list.push({id,name,desc,goal,raised:0,creator:creatorName,deadline});
       saveCauses(list);
     }catch(e){syncErr(e);closeCauseModal();return;}
   } else {
-    list.push({id:'c_'+Date.now(),name,desc,goal,raised:0,creator:(currentUser.first||'')+' '+(currentUser.last||'')});
+    list.push({id:'c_'+Date.now(),name,desc,goal,raised:0,creator:creatorName,deadline});
     saveCauses(list);
   }
   closeCauseModal();
