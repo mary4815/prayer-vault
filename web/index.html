@@ -1689,11 +1689,16 @@ document.getElementById('do-logout').addEventListener('click',async e=>{
 // ═══ LAUNCH ═══
 async function launchApp(user){
   currentUser=user;
-  if(useSupa())await loadAllData(user.id);
-  prayers=getPrayers(user.id);
+  // Reveal the app shell + navigation immediately so the UI is responsive
+  // while data loads in the background (avoids the "click and wait" lag).
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   updateSidebarUser();
+  let startPage='today'; try{ const lp=localStorage.getItem('pmv_page'); if(lp && document.getElementById('page-'+lp)) startPage=lp; }catch(e){}
+  showPage(startPage); // restore the page you were on, instantly
+  // Now load data (may hit the network) and fill in content afterwards.
+  if(useSupa())await loadAllData(user.id);
+  prayers=getPrayers(user.id);
   document.getElementById('today-date').textContent=new Intl.DateTimeFormat('en',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).format(NOW);
   const v=VERSES[Math.floor(Date.now()/86400000)%VERSES.length];
   document.getElementById('daily-verse').textContent=v.v;
@@ -1709,8 +1714,7 @@ async function launchApp(user){
   renderAll();renderReminders();renderChat();renderWall();
   const sk=getStreak(currentUser.id);renderStreak(sk);
   renderAnniversaries();
-  let startPage='today'; try{ const lp=localStorage.getItem('pmv_page'); if(lp && document.getElementById('page-'+lp)) startPage=lp; }catch(e){}
-  showPage(startPage); // return to the page you were on before refresh
+  showPage(startPage); // re-apply saved page now that content is rendered
   setTimeout(showOnboarding,400);
   handleBillingReturn();
 }
