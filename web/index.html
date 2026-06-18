@@ -2487,6 +2487,16 @@ document.querySelectorAll('#rating-consistency .rdot').forEach(d=>{
 document.getElementById('rv-month').addEventListener('change',()=>loadReviewForMonth(document.getElementById('rv-month').value));
 document.getElementById('save-review').addEventListener('click',saveCurrentReview);
 document.getElementById('save-review-2').addEventListener('click',saveCurrentReview);
+// Add a "+ Add entry" button inside each section card so users don't have to
+// scroll to the Save button. Each saves the whole dated entry.
+document.querySelectorAll('.review-layout .rcard').forEach(card=>{
+  const b=document.createElement('button');
+  b.className='btn btn-ghost btn-sm';
+  b.textContent='+ Add entry';
+  b.style.cssText='margin-top:10px;align-self:flex-start';
+  b.addEventListener('click',saveCurrentReview);
+  card.appendChild(b);
+});
 
 function buildReviewPdfHtml(d,key){
   const[yr,mo]=key.split('-').map(Number);
