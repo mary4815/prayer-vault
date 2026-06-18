@@ -2031,18 +2031,26 @@ function constellationHTML(items){
       <span class="orb-ico">${m.icon}</span><span class="orb-lbl">${escape((s.name.split(' ')[0]||s.name).slice(0,10))}</span></button>`;
   }).join('');
 }
-function subjectCard(s){
+// 5-dot "faithfulness" meter from how many times you've prayed for a subject.
+function liftLevel(c){ return c>=21?5:c>=11?4:c>=6?3:c>=3?2:c>=1?1:0; }
+function intensityHTML(c){
+  const lv=liftLevel(c), dots=Array.from({length:5},(_,i)=>`<span class="idot${i<lv?' on':''}"></span>`).join('');
+  return`<div class="intensity"><span class="idots">${dots}</span><span class="lvl">${c?c+'×':'New'}</span></div>`;
+}
+function subjectCard(s,kind){
   const m=typeMeta(s.type), done=s.active===0;
+  kind=kind||(done?'done':'faithful');
   const reqs=[...s.items].sort((a,b)=>(a.answered?1:0)-(b.answered?1:0))
     .map(p=>`<div class="preq${p.answered?' ans':''}"><span class="dot"></span><span>${escape(p.request)}</span></div>`).join('');
   const prayBtn=done?'':`<button class="prow-pray" data-pray="${escape(s.name)}">🙏 Pray</button>`;
-  const meta=`${s.active} active · ${s.answered} answered · prayed ${s.count}× · ${lastLiftedLine(s.last)}`;
-  return`<div class="prow ${done?'done':'faithful'}" id="subj-${s.uid}">
+  const meta=`${s.active} active · ${s.answered} answered · ${lastLiftedLine(s.last)}`;
+  return`<div class="prow ${kind}" id="subj-${s.uid}">
     <div class="prow-head" data-toggle="${s.uid}">
       <div class="orb-mini" style="background:${m.c}">${m.icon}</div>
       <div class="prow-main">
         <div class="prow-name">${escape(s.name)} <span class="type-chip">${escape(s.type)}</span></div>
         <div class="prow-meta">${meta}</div>
+        ${intensityHTML(s.count)}
       </div>
       ${prayBtn}
       <span class="prow-chev">▾</span>
@@ -2068,13 +2076,23 @@ function renderPeople(){
   const list=Object.values(map);
   if(!list.length){grid.innerHTML=`<div class="empty"><div class="big">${icon('person',28)}</div><h3>Nothing on your map yet</h3><p>Add a prayer — a person, a job, an event, anything — and it appears here.</p></div>`;return}
   const lifts=getLifts(currentUser.id);
-  list.forEach((s,idx)=>{const lf=lifts[s.name]||{count:0,last:0,days:{}};s.uid=idx;s.count=lf.count||0;s.last=lf.last||0;s.days=lf.days||{};});
+  list.forEach((s,idx)=>{const lf=lifts[s.name]||{count:0,last:0,days:{}};s.uid=idx;s.count=lf.count||0;s.last=lf.last||0;s.days=lf.days||{};s.daysSince=s.last?Math.floor((now-s.last)/86400000):null;});
   const active=list.filter(s=>s.active>0);
   const weekAgo=now-7*86400000;
   const prayedThisWeek=Object.values(lifts).filter(l=>l.last>=weekAgo).length;
-  // 1 · Milestones (subjects prayed for 30+ days, oldest first)
+  // Smart sections: who needs prayer, who you're faithful to, what's answered
+  const urg=s=>s.daysSince===null?1e9:s.daysSince;
+  const needs=active.filter(s=>s.daysSince===null||s.daysSince>=3).sort((a,b)=>urg(b)-urg(a));
+  const faithful=active.filter(s=>!(s.daysSince===null||s.daysSince>=3)).sort((a,b)=>b.count-a.count);
+  const answered=list.filter(s=>s.active===0).sort((a,b)=>b.last-a.last);
+  const spot=needs[0]||faithful[0]||answered[0];
+  const sm=typeMeta(spot.type);
+  const spotMsg=spot.active===0
+    ?`Every prayer for <b>${escape(spot.name)}</b> is answered. Give thanks. 🕊`
+    :spot.daysSince===null?`You haven't prayed for <b>${escape(spot.name)}</b> yet.`
+    :spot.daysSince>=3?`It's been ${spot.daysSince} days since you prayed for <b>${escape(spot.name)}</b>.`
+    :`<b>${escape(spot.name)}</b> could use prayer today.`;
   const annivs=list.filter(s=>now-s.first>=30*86400000).sort((a,b)=>a.first-b.first);
-  // 2 · Constellation (by how often prayed)
   const byCount=[...list].sort((a,b)=>b.count-a.count||b.active-a.active);
   let html=`<div class="pc-band">
     <div class="pc-stats">
@@ -2082,7 +2100,11 @@ function renderPeople(){
       <div class="pc-stat"><div class="n">${active.length}</div><div class="l">Active</div></div>
       <div class="pc-stat"><div class="n">${prayedThisWeek}</div><div class="l">Prayed / 7d</div></div>
     </div>
-    <div class="pc-spot pc-verse"><div class="pc-spot-txt"><div class="k">🕊 Keep watch</div><div class="v">"Devote yourselves to prayer, being watchful and thankful." — Col 4:2</div></div></div>
+    <div class="pc-spot">
+      <div class="orb-mini" style="background:${sm.c}">${sm.icon}</div>
+      <div class="pc-spot-txt"><div class="k">${spot.active===0?'🕊 Answered':'🙏 Needs prayer'}</div><div class="v">${spotMsg}</div></div>
+      ${spot.active===0?'':`<button class="btn btn-primary btn-sm" data-pray="${escape(spot.name)}">Pray now</button>`}
+    </div>
   </div>`;
   if(annivs.length){
     html+=`<div class="pc-sec">🕊 Milestones</div><div class="anniv-strip">`+annivs.slice(0,10).map(s=>{
@@ -2091,8 +2113,10 @@ function renderPeople(){
     }).join('')+`</div>`;
   }
   html+=`<div class="pc-sec">🌌 Prayer constellation</div><div class="constellation">${constellationHTML(byCount)}</div><p class="const-hint">Bigger orb = prayed for more often · tap to open</p>`;
-  const sorted=[...list].sort((a,b)=>(a.active===0?1:0)-(b.active===0?1:0)||b.count-a.count||b.active-a.active);
-  html+=`<div class="pc-sec">All · ${list.length}</div>`+sorted.map(subjectCard).join('');
+  const section=(title,arr,kind)=>arr.length?`<div class="pc-sec">${title}</div>`+arr.map(s=>subjectCard(s,kind)).join(''):'';
+  html+=section(`🕊 Needs your prayer · ${needs.length}`,needs,'urgent');
+  html+=section(`🔥 Faithfully carrying · ${faithful.length}`,faithful,'faithful');
+  html+=section(`✓ Fully answered · ${answered.length}`,answered,'done');
   grid.innerHTML=html;
   grid.querySelectorAll('[data-orb]').forEach(o=>o.addEventListener('click',()=>{const el=document.getElementById('subj-'+o.dataset.orb);if(el){el.classList.add('open');el.scrollIntoView({behavior:'smooth',block:'center'});}}));
   grid.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>togglePerson(b.dataset.toggle)));
