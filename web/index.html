@@ -15,6 +15,10 @@
     padding: 0 !important;
     z-index: 99999;
   }
+  /* When printing the journal: fully remove the live app (not just hide it) so
+     it can't overlap, and let the doc flow normally across multiple pages. */
+  body.printing > *:not(#print-area){ display: none !important; }
+  body.printing #print-area{ position: static !important; width: auto !important; }
   @page { margin: 18mm 20mm; }
 }
 </style>
@@ -2588,8 +2592,10 @@ function buildReviewPdfHtml(d,key){
 function printReviewHtml(html){
   const pa=document.getElementById('print-area');
   pa.innerHTML=html;
+  document.body.appendChild(pa);          // make it a direct child of body so display:none on siblings works
+  document.body.classList.add('printing');
   pa.style.display='block';
-  setTimeout(()=>{ window.print(); pa.style.display='none'; },200);
+  setTimeout(()=>{ window.print(); pa.style.display='none'; document.body.classList.remove('printing'); },300);
 }
 
 // Build the full monthly journal document: every dated entry, stacked in order.
