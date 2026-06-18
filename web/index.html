@@ -2404,6 +2404,8 @@ function saveCurrentReview(){
   if(!reviewHasContent(data)){toast('Write something before saving.');return;}
   const all=getReview(currentUser.id)||{};
   all[key]={...data,savedAt:Date.now()};
+  // cap the archive at the 12 most recent months
+  Object.keys(all).sort(rvKeyCmp).slice(REVIEW_CAP).forEach(k=>delete all[k]);
   saveReview(currentUser.id,all);
   renderReviewArchive();
   clearReviewForm();
@@ -2417,12 +2419,15 @@ function saveCurrentReview(){
 }
 
 const rvEsc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const REVIEW_CAP=12;
+// chronological, newest month first
+const rvKeyCmp=(a,b)=>{const[ay,am]=a.split('-').map(Number),[by,bm]=b.split('-').map(Number);return (by*12+bm)-(ay*12+am);};
 
 function renderReviewArchive(){
   const grid=document.getElementById('review-archive-grid');
   if(!grid)return;
   const all=getReview(currentUser.id)||{};
-  const keys=Object.keys(all).filter(k=>reviewHasContent(all[k])).sort().reverse();
+  const keys=Object.keys(all).filter(k=>reviewHasContent(all[k])).sort(rvKeyCmp).slice(0,REVIEW_CAP);
   if(!keys.length){
     grid.innerHTML=`<div class="gcard" style="grid-column:1/-1;text-align:center;padding:28px;color:var(--muted)"><h3 style="margin:0 0 4px">No saved reviews yet</h3><p style="font-size:13px;margin:0">Fill out the review above and click Save Review — it will appear here.</p></div>`;
     return;
