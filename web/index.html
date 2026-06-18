@@ -1558,7 +1558,7 @@ async function loadAllData(uid){
     ]);
     cache.prayers=(pr.data||[]).map(MAP.prayers.from).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     synced.prayers=cache.prayers.map(x=>String(x.id));
-    const rev={};(rv.data||[]).forEach(r=>{rev[r.month]={grew:r.grew||'',drifted:r.drifted||'',carry:r.carry||'',godseen:r.godseen||'',consistency:r.consistency||'',intention:r.intention||'',rating:r.rating||0};});
+    const rev={};(rv.data||[]).forEach(r=>{rev[r.month]=parseMonthRow(r);});
     cache.review=rev;
     cache.prefs=pf.data?{remind:pf.data.remind!==false,digest:!!pf.data.digest,prompts:pf.data.prompts!==false,colorIdx:pf.data.color_idx||0}:{remind:true,digest:false,prompts:true,colorIdx:0};
     cache.streak=sk.data?{current:sk.data.current||0,best:sk.data.longest||0,history:sk.data.days||[]}:{current:0,best:0,history:[]};
@@ -1586,7 +1586,7 @@ async function saveReview(uid,r){
   if(!useSupa()){set(rk(uid),r);return;}
   cache.review=r;
   try{
-    const rows=Object.entries(r).map(([month,d])=>({user_id:uid,month,grew:d.grew||null,drifted:d.drifted||null,carry:d.carry||null,godseen:d.godseen||null,consistency:d.consistency||null,intention:d.intention||null,rating:d.rating||0}));
+    const rows=Object.entries(r).map(([month,d])=>{const es=monthEntries(d);const last=es[es.length-1]||{};return {user_id:uid,month,grew:JSON.stringify(es),drifted:null,carry:null,godseen:null,consistency:null,intention:null,rating:last.rating||0};});
     if(rows.length){const {error}=await supa.from('reviews').upsert(rows);if(error)throw error;}
   }catch(e){syncErr(e);}
 }
@@ -2366,18 +2366,9 @@ function updateReviewStats(){
 }
 
 function loadReviewForMonth(key){
-  const all=getReview(currentUser.id);
-  const data=all[key]||{};
-  document.getElementById('rv-grew').value=data.grew||'';
-  document.getElementById('rv-drifted').value=data.drifted||'';
-  document.getElementById('rv-carry').value=data.carry||'';
-  document.getElementById('rv-godseen').value=data.godseen||'';
-  document.getElementById('rv-consistency').value=data.consistency||'';
-  document.getElementById('rv-intention').value=data.intention||'';
-  rvRating=data.rating||0;
-  document.querySelectorAll('#rating-consistency .rdot').forEach(d=>{
-    d.classList.toggle('active',Number(d.dataset.v)<=rvRating);
-  });
+  // Journal model: selecting a month starts a fresh entry; past dated entries
+  // for that month live in the archive (open the PDF to see the full doc).
+  clearReviewForm();
   updateReviewStats();
 }
 
@@ -2403,24 +2394,35 @@ function reviewHasContent(d){
   return !!(String(d.grew||'').trim()||String(d.drifted||'').trim()||String(d.carry||'').trim()||String(d.godseen||'').trim()||String(d.consistency||'').trim()||String(d.intention||'').trim()||d.rating);
 }
 
+// A month record is {entries:[{date,...fields,rating}]}. Normalise any shape
+// (new entries array, legacy flat object) into an array of dated entries.
+function monthEntries(rec){
+  if(!rec)return [];
+  if(Array.isArray(rec.entries))return rec.entries;
+  return reviewHasContent(rec)?[{grew:rec.grew||'',drifted:rec.drifted||'',carry:rec.carry||'',godseen:rec.godseen||'',consistency:rec.consistency||'',intention:rec.intention||'',rating:rec.rating||0,date:rec.savedAt||Date.now()}]:[];
+}
+// Reads a Supabase review row: entries JSON lives in `grew`; older rows are flat.
+function parseMonthRow(r){
+  if(typeof r.grew==='string'){const t=r.grew.trim();if(t.startsWith('[')){try{const p=JSON.parse(t);if(Array.isArray(p))return {entries:p};}catch(e){}}}
+  const legacy={grew:r.grew||'',drifted:r.drifted||'',carry:r.carry||'',godseen:r.godseen||'',consistency:r.consistency||'',intention:r.intention||'',rating:r.rating||0};
+  return reviewHasContent(legacy)?{entries:[{...legacy,date:Date.now()}]}:{entries:[]};
+}
+
 function saveCurrentReview(){
   const key=document.getElementById('rv-month').value;
   const data=reviewDataFromForm();
   if(!reviewHasContent(data)){toast('Write something before saving.');return;}
   const all=getReview(currentUser.id)||{};
-  all[key]={...data,savedAt:Date.now()};
+  const entries=monthEntries(all[key]).slice();
+  entries.push({...data,date:Date.now()});
+  all[key]={entries};
   // cap the archive at the 12 most recent months
   Object.keys(all).sort(rvKeyCmp).slice(REVIEW_CAP).forEach(k=>delete all[k]);
   saveReview(currentUser.id,all);
   renderReviewArchive();
   clearReviewForm();
-  // start the next entry fresh on the current month
-  const now=new Date();
-  const curKey=now.getFullYear()+'-'+(now.getMonth()+1);
-  const picker=document.getElementById('rv-month');
-  if([...picker.options].some(o=>o.value===curKey))picker.value=curKey;
   updateReviewStats();
-  toast('Saved to your archive.');
+  toast('Entry added to this month’s journal.');
 }
 
 const rvEsc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2432,7 +2434,7 @@ function renderReviewArchive(){
   const grid=document.getElementById('review-archive-grid');
   if(!grid)return;
   const all=getReview(currentUser.id)||{};
-  const keys=Object.keys(all).filter(k=>reviewHasContent(all[k])).sort(rvKeyCmp).slice(0,REVIEW_CAP);
+  const keys=Object.keys(all).filter(k=>monthEntries(all[k]).length).sort(rvKeyCmp).slice(0,REVIEW_CAP);
   if(!keys.length){
     grid.innerHTML=`<div class="gcard" style="grid-column:1/-1;text-align:center;padding:28px;color:var(--muted)"><h3 style="margin:0 0 4px">No saved reviews yet</h3><p style="font-size:13px;margin:0">Fill out the review above and click Save Review — it will appear here.</p></div>`;
     return;
@@ -2441,21 +2443,24 @@ function renderReviewArchive(){
     const d=all[key];
     const[yr,mo]=key.split('-').map(Number);
     const label=new Date(yr,mo-1,1).toLocaleDateString('en',{month:'long',year:'numeric'});
-    const savedAt=d.savedAt?'Saved '+new Date(d.savedAt).toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'}):'';
-    const dots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${i<(d.rating||0)?'var(--sage)':'#dce3e8'};margin-right:3px"></span>`).join('');
-    const src=String(d.godseen||d.grew||d.intention||d.consistency||d.carry||d.drifted||'').trim();
+    const es=monthEntries(d).slice().sort((a,b)=>(a.date||0)-(b.date||0));
+    const last=es[es.length-1]||{};
+    const count=es.length+' '+(es.length===1?'entry':'entries');
+    const lastDate=last.date?'latest '+new Date(last.date).toLocaleDateString('en',{month:'short',day:'numeric'}):'';
+    const dots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${i<(last.rating||0)?'var(--sage)':'#dce3e8'};margin-right:3px"></span>`).join('');
+    const src=String(last.godseen||last.grew||last.intention||last.consistency||last.carry||last.drifted||'').trim();
     const preview=src?rvEsc(src.slice(0,150))+(src.length>150?'…':''):'No notes written.';
     return `<div class="wall-card">
       <div class="wc-head" style="justify-content:space-between">
         <div>
           <div class="wc-name">${label}</div>
-          <div class="wc-time">${savedAt}</div>
+          <div class="wc-time">${count}${lastDate?' · '+lastDate:''}</div>
         </div>
         <div style="white-space:nowrap">${dots}</div>
       </div>
       <div class="wc-req">${preview}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" data-rv-open="${key}">Open</button>
+        <button class="btn btn-ghost btn-sm" data-rv-open="${key}">+ Add entry</button>
         <button class="btn btn-primary btn-sm" data-rv-pdf="${key}">Save as PDF</button>
       </div>
     </div>`;
@@ -2577,16 +2582,45 @@ function printReviewHtml(html){
   setTimeout(()=>{ window.print(); pa.style.display='none'; },200);
 }
 
+// Build the full monthly journal document: every dated entry, stacked in order.
+function buildMonthPdfHtml(key){
+  const es=monthEntries((getReview(currentUser.id)||{})[key]).slice().sort((a,b)=>(a.date||0)-(b.date||0));
+  const[yr,mo]=key.split('-').map(Number);
+  const monthLabel=new Date(yr,mo-1,1).toLocaleDateString('en',{month:'long',year:'numeric'});
+  const name=currentUser.first+' '+(currentUser.last||'');
+  const sec=(label,val,bg,bd)=>{const v=String(val||'').trim();if(!v)return'';return `<div style="margin-bottom:13px"><div style="font-size:12px;font-weight:800;color:#5a6e80;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${label}</div><div style="font-size:14px;color:#0e1e2e;line-height:1.6;background:${bg};border:1px solid ${bd};border-radius:8px;padding:10px">${rvEsc(v).replace(/\n/g,'<br>')}</div></div>`;};
+  const entriesHtml=es.map(d=>{
+    const dlabel=d.date?new Date(d.date).toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric'}):'Undated';
+    const dots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${i<(d.rating||0)?'#4a7850':'#dce3e8'};margin-right:3px"></span>`).join('');
+    return `<div style="margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid #e6ebe6">
+      <div style="font-size:15px;font-weight:800;color:#26502a;margin-bottom:8px">${dlabel}</div>
+      <div style="margin-bottom:12px">${dots}</div>
+      ${sec('Prayer Consistency',d.consistency,'#fafcfa','#dce3e8')}
+      ${sec('Where I Grew',d.grew,'#fafcfa','#dce3e8')}
+      ${sec('Where I Drifted',d.drifted,'#fafcfa','#dce3e8')}
+      ${sec('Where I Saw God Move',d.godseen,'#f3fbf3','#b8d4ba')}
+      ${sec('People to Carry Forward',d.carry,'#fafcfa','#dce3e8')}
+      ${sec('One Intention for Next Month',d.intention,'#fff6e0','#e8c060')}
+    </div>`;
+  }).join('');
+  return `<div style="font-family:Georgia,serif;max-width:680px;margin:0 auto;color:#0e1e2e;padding:20px 0">
+    <div style="border-bottom:2px solid #4a7850;padding-bottom:18px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-size:11px;font-weight:700;color:#4a7850;text-transform:uppercase;letter-spacing:.1em">Prayer Memory Vault</div><div style="font-size:22px;font-weight:800;color:#0c2237">Monthly Prayer Journal</div></div>
+      <div style="text-align:right"><div style="font-size:16px;font-weight:700;color:#0c2237">${monthLabel}</div><div style="font-size:13px;color:#5a6e80">${name} · ${es.length} ${es.length===1?'entry':'entries'}</div></div>
+    </div>
+    <div style="background:#f3f6f3;border-left:4px solid #4a7850;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:24px;font-style:italic;font-size:14px;color:#26502a;line-height:1.6">"Search me, God, and know my heart; test me and know my anxious thoughts."<span style="display:block;margin-top:6px;font-style:normal;font-size:12px;font-weight:700;color:#4a7850">— Psalm 139:23</span></div>
+    ${entriesHtml||'<p style="color:#5a6e80">No entries yet.</p>'}
+    <div style="border-top:1px solid #dce3e8;padding-top:14px;display:flex;justify-content:space-between;font-size:12px;color:#5a6e80"><div>Prayer Memory Vault — ${name}</div><div>Printed ${new Date().toLocaleDateString('en',{month:'long',day:'numeric',year:'numeric'})}</div></div>
+  </div>`;
+}
+
 function exportReviewMonth(key){
-  const all=getReview(currentUser.id)||{};
-  const d=all[key];
-  if(!reviewHasContent(d)){toast('Nothing saved for that month yet.');return;}
-  printReviewHtml(buildReviewPdfHtml(d,key));
+  if(!monthEntries((getReview(currentUser.id)||{})[key]).length){toast('Nothing saved for that month yet.');return;}
+  printReviewHtml(buildMonthPdfHtml(key));
 }
 
 document.getElementById('rv-export-pdf').addEventListener('click',()=>{
-  const key=document.getElementById('rv-month').value;
-  printReviewHtml(buildReviewPdfHtml(reviewDataFromForm(),key));
+  exportReviewMonth(document.getElementById('rv-month').value);
 });
 
 document.getElementById('rv-clear').addEventListener('click',clearReviewForm);
