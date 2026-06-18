@@ -1666,9 +1666,13 @@ let supa = (SUPA_READY && window.supabase) ? window.supabase.createClient(SUPABA
 // server BEFORE the user clicks Upgrade/Donate, so checkout feels instant
 // instead of frozen. Throttled so navigation doesn't spam it.
 let _warmedAt=0;
-function warmBackend(){
+function warmBackend(intent){
   if(!API_BASE)return;
-  if(Date.now()-_warmedAt<60000)return;   // at most once a minute
+  // Passive navigation pings at most once a minute; a real intent signal
+  // (hovering or clicking Donate/Upgrade) may re-wake the server much sooner
+  // so a cold-start never lands on the actual checkout call.
+  const gap = intent ? 8000 : 60000;
+  if(Date.now()-_warmedAt<gap)return;
   _warmedAt=Date.now();
   try{ fetch(API_BASE+'/api/health',{cache:'no-store'}).catch(()=>{}); }catch(e){}
 }
@@ -3412,7 +3416,13 @@ function renderDonate(){
     </div>`;
   }).join('');
   grid.querySelectorAll('[data-donate]').forEach(btn=>{
+    // Hovering Donate is a strong intent signal — start waking the billing
+    // server before the click so any cold-start is already underway.
+    btn.addEventListener('pointerenter',()=>warmBackend(true),{passive:true});
     btn.addEventListener('click',async function(){
+      // Fire one more wake now; the blocking prompt() below gives the
+      // cold-start 20-50s of cover while the user types an amount.
+      warmBackend(true);
       const amt=prompt('Enter donation amount ($):','25');
       if(amt===null)return;
       const n=parseFloat(amt);
