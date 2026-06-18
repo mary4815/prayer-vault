@@ -950,13 +950,16 @@ button{cursor:pointer}
           </div>
         </div>
 
-        <div class="review-save-row" style="margin-top:14px">
-          <div class="past-reviews">
-            <span style="font-size:13px;color:var(--muted);font-weight:700">Past reviews:</span>
-            <select id="rv-history"><option value="">Select a month to load</option></select>
-          </div>
+        <div class="review-save-row" style="margin-top:14px;justify-content:flex-end">
           <button class="btn btn-ghost" id="rv-clear">Clear</button>
           <button class="btn btn-primary" id="save-review-2">Save Review</button>
+        </div>
+
+        <!-- SAVED REVIEW ARCHIVE -->
+        <div id="review-archive-wrap" style="margin-top:30px">
+          <h2 style="font-size:18px;font-weight:800;margin:0 0 4px">Your Review Archive</h2>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 16px">Saved monthly reviews. Open one to keep editing, or save it as a PDF.</p>
+          <div class="wall-grid" id="review-archive-grid"></div>
         </div>
       </div>
 
@@ -1855,7 +1858,7 @@ async function launchApp(user){
   document.getElementById('rv-drifted').value=rv.drifted||'';
   document.getElementById('rv-carry').value=rv.carry||'';
   populateProfileForm();setupProfileExtras();
-  populateMonthPicker();populateReviewHistory();
+  populateMonthPicker();renderReviewArchive();
   const curKey=new Date().getFullYear()+'-'+(new Date().getMonth()+1);
   loadReviewForMonth(curKey);
   renderAll();renderReminders();renderChat();renderWall();
@@ -2373,36 +2376,88 @@ function loadReviewForMonth(key){
   updateReviewStats();
 }
 
-function saveCurrentReview(){
-  const key=document.getElementById('rv-month').value;
-  const all=getReview(currentUser.id)||{};
-  all[key]={
+function reviewDataFromForm(){
+  return {
     grew:document.getElementById('rv-grew').value,
     drifted:document.getElementById('rv-drifted').value,
     carry:document.getElementById('rv-carry').value,
     godseen:document.getElementById('rv-godseen').value,
     consistency:document.getElementById('rv-consistency').value,
     intention:document.getElementById('rv-intention').value,
-    rating:rvRating,
-    savedAt:Date.now()
+    rating:rvRating
   };
-  saveReview(currentUser.id,all);
-  // update history dropdown
-  populateReviewHistory();
-  toast('Monthly review saved.');
 }
 
-function populateReviewHistory(){
-  const sel=document.getElementById('rv-history');
+function clearReviewForm(){
+  ['rv-grew','rv-drifted','rv-carry','rv-godseen','rv-consistency','rv-intention'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  rvRating=0;document.querySelectorAll('#rating-consistency .rdot').forEach(d=>d.classList.remove('active'));
+}
+
+function reviewHasContent(d){
+  if(!d)return false;
+  return !!(String(d.grew||'').trim()||String(d.drifted||'').trim()||String(d.carry||'').trim()||String(d.godseen||'').trim()||String(d.consistency||'').trim()||String(d.intention||'').trim()||d.rating);
+}
+
+function saveCurrentReview(){
+  const key=document.getElementById('rv-month').value;
+  const data=reviewDataFromForm();
+  if(!reviewHasContent(data)){toast('Write something before saving.');return;}
   const all=getReview(currentUser.id)||{};
-  sel.innerHTML='<option value="">Select a month to load</option>';
-  Object.keys(all).sort().reverse().forEach(key=>{
+  all[key]={...data,savedAt:Date.now()};
+  saveReview(currentUser.id,all);
+  renderReviewArchive();
+  clearReviewForm();
+  // start the next entry fresh on the current month
+  const now=new Date();
+  const curKey=now.getFullYear()+'-'+(now.getMonth()+1);
+  const picker=document.getElementById('rv-month');
+  if([...picker.options].some(o=>o.value===curKey))picker.value=curKey;
+  updateReviewStats();
+  toast('Saved to your archive.');
+}
+
+const rvEsc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function renderReviewArchive(){
+  const grid=document.getElementById('review-archive-grid');
+  if(!grid)return;
+  const all=getReview(currentUser.id)||{};
+  const keys=Object.keys(all).filter(k=>reviewHasContent(all[k])).sort().reverse();
+  if(!keys.length){
+    grid.innerHTML=`<div class="gcard" style="grid-column:1/-1;text-align:center;padding:28px;color:var(--muted)"><h3 style="margin:0 0 4px">No saved reviews yet</h3><p style="font-size:13px;margin:0">Fill out the review above and click Save Review — it will appear here.</p></div>`;
+    return;
+  }
+  grid.innerHTML=keys.map(key=>{
+    const d=all[key];
     const[yr,mo]=key.split('-').map(Number);
     const label=new Date(yr,mo-1,1).toLocaleDateString('en',{month:'long',year:'numeric'});
-    const opt=document.createElement('option');
-    opt.value=key;opt.textContent=label;
-    sel.appendChild(opt);
-  });
+    const savedAt=d.savedAt?'Saved '+new Date(d.savedAt).toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'}):'';
+    const dots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${i<(d.rating||0)?'var(--sage)':'#dce3e8'};margin-right:3px"></span>`).join('');
+    const src=String(d.godseen||d.grew||d.intention||d.consistency||d.carry||d.drifted||'').trim();
+    const preview=src?rvEsc(src.slice(0,150))+(src.length>150?'…':''):'No notes written.';
+    return `<div class="wall-card">
+      <div class="wc-head" style="justify-content:space-between">
+        <div>
+          <div class="wc-name">${label}</div>
+          <div class="wc-time">${savedAt}</div>
+        </div>
+        <div style="white-space:nowrap">${dots}</div>
+      </div>
+      <div class="wc-req">${preview}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" data-rv-open="${key}">Open</button>
+        <button class="btn btn-primary btn-sm" data-rv-pdf="${key}">Save as PDF</button>
+      </div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('[data-rv-open]').forEach(b=>b.addEventListener('click',function(){
+    const key=this.dataset.rvOpen;
+    const picker=document.getElementById('rv-month');
+    if([...picker.options].some(o=>o.value===key))picker.value=key;
+    loadReviewForMonth(key);
+    document.getElementById('page-review').scrollIntoView({behavior:'smooth',block:'start'});
+  }));
+  grid.querySelectorAll('[data-rv-pdf]').forEach(b=>b.addEventListener('click',function(){exportReviewMonth(this.dataset.rvPdf);}));
 }
 
 document.querySelectorAll('#rating-consistency .rdot').forEach(d=>{
@@ -2415,23 +2470,20 @@ document.querySelectorAll('#rating-consistency .rdot').forEach(d=>{
 });
 
 document.getElementById('rv-month').addEventListener('change',()=>loadReviewForMonth(document.getElementById('rv-month').value));
-document.getElementById('rv-history').addEventListener('change',function(){
-  if(this.value){document.getElementById('rv-month').value=this.value;loadReviewForMonth(this.value);}
-});
 document.getElementById('save-review').addEventListener('click',saveCurrentReview);
 document.getElementById('save-review-2').addEventListener('click',saveCurrentReview);
-document.getElementById('rv-export-pdf').addEventListener('click',()=>{
-  const key=document.getElementById('rv-month').value;
+
+function buildReviewPdfHtml(d,key){
   const[yr,mo]=key.split('-').map(Number);
   const monthLabel=new Date(yr,mo-1,1).toLocaleDateString('en',{month:'long',year:'numeric'});
   const name=currentUser.first+' '+(currentUser.last||'');
-  const grew=document.getElementById('rv-grew').value||'—';
-  const drifted=document.getElementById('rv-drifted').value||'—';
-  const carry=document.getElementById('rv-carry').value||'—';
-  const godseen=document.getElementById('rv-godseen').value||'—';
-  const consistency=document.getElementById('rv-consistency').value||'—';
-  const intention=document.getElementById('rv-intention').value||'—';
-  const ratingDots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${i<rvRating?'#4a7850':'#dce3e8'};margin-right:4px"></span>`).join('');
+  const grew=(d.grew||'').trim()||'—';
+  const drifted=(d.drifted||'').trim()||'—';
+  const carry=(d.carry||'').trim()||'—';
+  const godseen=(d.godseen||'').trim()||'—';
+  const consistency=(d.consistency||'').trim()||'—';
+  const intention=(d.intention||'').trim()||'—';
+  const ratingDots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${i<(d.rating||0)?'#4a7850':'#dce3e8'};margin-right:4px"></span>`).join('');
 
   const html=`
   <div style="font-family:Georgia,serif;max-width:680px;margin:0 auto;color:#0e1e2e;padding:20px 0">
@@ -2505,16 +2557,29 @@ document.getElementById('rv-export-pdf').addEventListener('click',()=>{
     </div>
   </div>`;
 
+  return html;
+}
+
+function printReviewHtml(html){
   const pa=document.getElementById('print-area');
   pa.innerHTML=html;
   pa.style.display='block';
   setTimeout(()=>{ window.print(); pa.style.display='none'; },200);
+}
+
+function exportReviewMonth(key){
+  const all=getReview(currentUser.id)||{};
+  const d=all[key];
+  if(!reviewHasContent(d)){toast('Nothing saved for that month yet.');return;}
+  printReviewHtml(buildReviewPdfHtml(d,key));
+}
+
+document.getElementById('rv-export-pdf').addEventListener('click',()=>{
+  const key=document.getElementById('rv-month').value;
+  printReviewHtml(buildReviewPdfHtml(reviewDataFromForm(),key));
 });
 
-document.getElementById('rv-clear').addEventListener('click',()=>{
-  ['rv-grew','rv-drifted','rv-carry','rv-godseen','rv-consistency','rv-intention'].forEach(id=>document.getElementById(id).value='');
-  rvRating=0;document.querySelectorAll('#rating-consistency .rdot').forEach(d=>d.classList.remove('active'));
-});
+document.getElementById('rv-clear').addEventListener('click',clearReviewForm);
 
 // ═══ PROFILE ═══
 function populateProfileForm(){
