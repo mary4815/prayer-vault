@@ -188,13 +188,78 @@ button{cursor:pointer}
 .streak-label{font-size:12px;color:var(--muted);margin-top:4px;font-weight:700}
 
 /* ── PEOPLE PAGE ── */
-.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
-.person-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;text-align:center;box-shadow:var(--shadow)}
-.person-card .av{margin:0 auto 10px;width:52px;height:52px;font-size:18px}
-.person-card h3{font-size:15px;font-weight:700;margin-bottom:4px}
-.person-card .detail{font-size:12px;color:var(--muted);margin-bottom:8px}
-.person-card .pc{font-size:12px;font-weight:700;color:var(--sage)}
-.person-card .last{font-size:11px;color:var(--muted);margin-top:4px}
+.pgrid{display:block}
+/* ── PEOPLE · Prayer Circle dashboard ── */
+.pc-band{background:linear-gradient(150deg,var(--navy2) 0%,var(--navy) 55%,#143520 100%);border-radius:16px;padding:22px 24px;color:#fff;margin-bottom:22px;display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center}
+.pc-stats{display:flex;gap:26px}
+.pc-stat .n{font-size:30px;font-weight:800;line-height:1;color:#fff}
+.pc-stat .l{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-top:5px}
+.pc-spot{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:13px}
+.pc-spot .av{width:42px;height:42px;font-size:15px;flex-shrink:0}
+.pc-spot-txt{flex:1;min-width:0}
+.pc-spot-txt .k{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#e8c96a;font-weight:700}
+.pc-spot-txt .v{font-size:14px;color:#fff;margin-top:2px;line-height:1.35}
+.pc-spot .btn{flex-shrink:0}
+.pc-sec{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:20px 2px 10px}
+.pc-sec:first-child{margin-top:0}
+.prow{background:#fff;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(12,34,55,.05);overflow:hidden;transition:box-shadow .15s,transform .12s}
+.prow:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.prow.urgent{border-left-color:var(--gold);background:linear-gradient(90deg,var(--gold-l) 0%,#fff 36%)}
+.prow.faithful{border-left-color:var(--sage)}
+.prow.done{border-left-color:var(--sage-m);background:#f5fbf5}
+.prow-head{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer}
+.prow-av{width:46px;height:46px;font-size:16px;flex-shrink:0}
+.prow-main{flex:1;min-width:0}
+.prow-name{font-size:16px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px}
+.prow-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.intensity{display:flex;align-items:center;gap:7px;margin-top:7px}
+.idots{display:flex;gap:3px}
+.idot{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.idot.on{background:var(--gold)}
+.intensity .lvl{font-size:11px;font-weight:700;color:var(--gold)}
+.prow.done .idot.on{background:var(--sage)}
+.prow.done .intensity .lvl{color:var(--sage)}
+.prow-pray{flex-shrink:0;background:var(--sage);color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;transition:filter .15s}
+.prow-pray:hover{filter:brightness(1.08)}
+.prow.urgent .prow-pray{background:var(--gold)}
+.prow-chev{flex-shrink:0;color:var(--muted);font-size:12px;width:16px;text-align:center;transition:transform .18s}
+.prow.open .prow-chev{transform:rotate(180deg)}
+.prow-body{display:none;padding:0 16px 14px 76px}
+.prow.open .prow-body{display:block}
+.preq{padding:10px 0;border-top:1px solid var(--line);font-size:13px;color:var(--ink);line-height:1.45;display:flex;align-items:flex-start;gap:9px}
+.preq .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);margin-top:6px;flex-shrink:0}
+.preq.ans .dot{background:var(--sage)}
+.preq.ans{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--sage-m)}
+.pc-verse{grid-column:auto}
+.pc-verse .v{font-style:italic;color:rgba(255,255,255,.85)}
+.type-chip{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;vertical-align:middle}
+.orb-mini{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:20px;flex-shrink:0;box-shadow:0 2px 6px rgba(12,34,55,.18)}
+/* Milestones strip */
+.anniv-strip{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:4px;scrollbar-width:thin}
+.anniv-chip{flex:0 0 auto;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--gold-l) 0%,#fff 100%);border:1px solid #ecd9a8;border-radius:12px;padding:10px 14px;cursor:pointer;transition:transform .12s,box-shadow .15s}
+.anniv-chip:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.anniv-chip .ac-ico{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:16px;color:#fff;flex-shrink:0}
+.anniv-chip .ac-name{font-size:14px;font-weight:700;color:var(--ink)}
+.anniv-chip .ac-dur{font-size:11px;color:var(--gold);font-weight:700}
+/* Constellation */
+.constellation{position:relative;height:340px;background:radial-gradient(circle at 50% 45%,#102b44 0%,#071628 70%,#05101d 100%);border-radius:18px;overflow:hidden;margin-bottom:6px;box-shadow:inset 0 0 60px rgba(0,0,0,.4)}
+.constellation::before{content:"";position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 70% 60%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 40% 80%,rgba(255,255,255,.35),transparent),radial-gradient(1px 1px at 85% 25%,rgba(255,255,255,.4),transparent);opacity:.7}
+.orb{position:absolute;transform:translate(-50%,-50%);border:none;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 2px 6px rgba(255,255,255,.18);animation:float 6s ease-in-out infinite;transition:filter .15s}
+.orb:hover{filter:brightness(1.15)}
+.orb-ico{font-size:18px;line-height:1}
+.orb-lbl{font-size:10px;font-weight:700;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+@keyframes float{0%,100%{transform:translate(-50%,-50%)}50%{transform:translate(-50%,calc(-50% - 7px))}}
+.const-hint{text-align:center;font-size:12px;color:var(--muted);margin:0 0 4px}
+/* Heat calendar */
+.heat-wrap{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.heat-label{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.heat{display:flex;gap:3px}
+.hcol{display:flex;flex-direction:column;gap:3px}
+.hcell{width:11px;height:11px;border-radius:2px;background:var(--line)}
+.hcell.l1{background:var(--sage-m)}
+.hcell.l2{background:var(--sage)}
+.hcell.l3{background:var(--navy)}
+@media(max-width:640px){.pc-band{grid-template-columns:1fr;gap:16px}.pc-stats{justify-content:space-around}.prow-body{padding-left:16px}.constellation{height:300px}.heat-wrap{overflow-x:auto}}
 
 /* ── ANSWERED PAGE ── */
 .answered-hero{background:linear-gradient(135deg,var(--navy2) 0%,#133020 100%);border-radius:14px;padding:28px 32px;color:#fff;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:20px}
@@ -627,7 +692,7 @@ button{cursor:pointer}
       <div class="s-section">Prayers</div>
       <button class="nbtn active" data-page="today"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L10 3l7 7"/><path d="M5 8.5V17h4v-4h2v4h4V8.5"/></svg></span>Today <span class="badge" id="nav-badge" style="display:none">0</span></button>
       <button class="nbtn" data-page="vault"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 0 1 6 0v3"/></svg></span>Prayer Vault</button>
-      <button class="nbtn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>People</button>
+      <button class="nbtn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Prayer Map</button>
       <div class="s-section">Record</div>
       <button class="nbtn" data-page="answered"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="m7 10 2 2 4-4"/></svg></span>Answered</button>
       <button class="nbtn" data-page="review"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17.5A2 2 0 0 1 6 16h12"/><path d="M4 2.5A2 2 0 0 0 6 4h12v16H6a2 2 0 0 1-2-2z"/></svg></span>Monthly Review</button>
@@ -735,7 +800,7 @@ button{cursor:pointer}
       <!-- PEOPLE -->
       <div class="page" id="page-people">
         <div class="topbar">
-          <div><h1>People</h1><p>Everyone you are carrying in prayer.</p></div>
+          <div><h1>Prayer Map</h1><p>Everything you're carrying — people, jobs, events, situations. See how long you've prayed, how often, and pray for any of them.</p></div>
           <button class="btn btn-primary" data-open-add>+ Add Prayer</button>
         </div>
         <div class="pgrid" id="people-grid"></div>
@@ -1207,7 +1272,7 @@ button{cursor:pointer}
   <!-- MOBILE NAV -->
   <nav class="mob-nav">
     <button class="mbn active" data-page="today"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 10L10 3l7 7"/><path d="M5 8.5V17h4v-4h2v4h4V8.5"/></svg></span>Today</button>
-    <button class="mbn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>People</button>
+    <button class="mbn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Prayer Map</button>
     <button class="mob-fab" data-open-add>+</button>
     <button class="mbn" data-page="answered"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="10" r="8"/><path d="m7 10 2 2 4-4"/></svg></span>Answered</button>
     <button class="mbn" data-page="profile"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Profile</button>
@@ -1296,12 +1361,13 @@ button{cursor:pointer}
   <div class="modal">
     <h2 id="modal-title">Add Prayer</h2>
     <p class="msub" id="modal-sub">Save the request, the person, and when to follow up.</p>
-    <div class="field"><label>Person's Name *</label><input id="f-person" placeholder="e.g. Mary Thompson"/></div>
-    <div class="field"><label>Prayer Request *</label><textarea id="f-request" rows="3" placeholder="What are you praying for them?"></textarea></div>
+    <div class="field"><label>Who or what are you praying for? *</label><input id="f-person" placeholder="e.g. Mary, New job, Dad's surgery"/></div>
+    <div class="field"><label>Prayer Request *</label><textarea id="f-request" rows="3" placeholder="What are you praying about?"></textarea></div>
     <div class="field-row">
+      <div class="field"><label>Type</label><select id="f-type"><option>Person</option><option>Job</option><option>Event</option><option>Other</option></select></div>
       <div class="field"><label>Category</label><select id="f-cat"><option>Family</option><option>Health</option><option>Work</option><option>Finances</option><option>Faith</option><option>Relationships</option><option>Other</option></select></div>
-      <div class="field"><label>Follow-up Date</label><input id="f-date" type="date"/></div>
     </div>
+    <div class="field"><label>Follow-up Date</label><input id="f-date" type="date"/></div>
     <div id="scripture-suggest-box" class="scripture-suggest">
       <div class="sv" id="ss-verse"></div>
       <div class="sr" id="ss-ref"></div>
@@ -1904,23 +1970,133 @@ function renderVault(){
   el.innerHTML=s.map(p=>cardHTML(p)).join('');attach(el);
 }
 
+// ═══ PRAYER MAP — everything you carry: people, jobs, events, situations ═══
+// Distinct from the Vault (flat list of prayers), the Prayer Map is organised by
+// SUBJECT and visualises your prayer life three ways:
+//   1. Milestones  — how long you've been praying for each subject
+//   2. Constellation — orbs sized by how often you've prayed (tap to open)
+//   3. Heat calendar — a 12-week grid per subject of the days you prayed
+const liftsKey=uid=>`pmv_lifts_${uid}`;
+function getLifts(uid){ try{return JSON.parse(localStorage.getItem(liftsKey(uid)))||{}}catch{return{}} }
+function saveLifts(uid,l){ try{localStorage.setItem(liftsKey(uid),JSON.stringify(l));}catch(e){} }
+function dateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+// Record a prayer for a subject — bumps count, last time, and today's heat cell.
+function recordLift(name){
+  if(!currentUser||!name)return;
+  const uid=currentUser.id, l=getLifts(uid);
+  const e=l[name]||(l[name]={count:0,last:0,days:{}});
+  if(!e.days)e.days={};
+  e.count++; e.last=Date.now();
+  const k=dateKey(new Date()); e.days[k]=(e.days[k]||0)+1;
+  saveLifts(uid,l);
+}
+const TYPE_META={Person:{icon:'🙏',c:'#4a7850'},Job:{icon:'💼',c:'#b0720c'},Event:{icon:'📅',c:'#2f6b8a'},Other:{icon:'✨',c:'#7a5ea8'}};
+function typeMeta(t){ return TYPE_META[t]||TYPE_META.Person; }
+function lastLiftedLine(last){
+  if(!last)return'Not yet prayed';
+  const d=Math.floor((Date.now()-last)/86400000);
+  return d<=0?'Prayed today':d===1?'Prayed yesterday':`Prayed ${d}d ago`;
+}
+function humanDur(ms){
+  const d=Math.floor(ms/86400000);
+  if(d>=365){const y=Math.floor(d/365);return y+(y>1?' years':' year');}
+  if(d>=30){const m=Math.floor(d/30);return m+(m>1?' months':' month');}
+  if(d>=7){const w=Math.floor(d/7);return w+(w>1?' weeks':' week');}
+  return d+(d===1?' day':' days');
+}
+// 12-week (84-day) contribution-style heat grid of the days you prayed.
+function heatHTML(days){
+  days=days||{}; let cols='';
+  const arr=[];
+  for(let i=83;i>=0;i--){const dt=new Date();dt.setHours(0,0,0,0);dt.setDate(dt.getDate()-i);arr.push(dateKey(dt));}
+  for(let c=0;c<12;c++){
+    let cells='';
+    for(let r=0;r<7;r++){const k=arr[c*7+r];if(!k)continue;const n=days[k]||0;const lv=n>=3?3:n;cells+=`<span class="hcell l${lv}" title="${k}${n?' · prayed '+n+'×':''}"></span>`;}
+    cols+=`<div class="hcol">${cells}</div>`;
+  }
+  return`<div class="heat">${cols}</div>`;
+}
+function togglePerson(i){ const row=document.getElementById('subj-'+i); if(row)row.classList.toggle('open'); }
+// Orbit layout: most-prayed subject in the centre, the rest on rings around it.
+function constellationHTML(items){
+  if(!items.length)return'';
+  const maxC=Math.max(1,...items.map(s=>s.count));
+  return items.slice(0,18).map((s,idx)=>{
+    let x,y;
+    if(idx===0){x=50;y=50;}
+    else{const ring=Math.ceil(idx/6),inRing=(idx-1)%6,ang=(inRing/6)*Math.PI*2+ring*0.7,rad=20+ring*15;
+      x=50+Math.cos(ang)*rad; y=50+Math.sin(ang)*rad*0.8;}
+    const d=44+Math.round((s.count/maxC)*48), m=typeMeta(s.type), delay=((idx%6)*0.5).toFixed(1);
+    return`<button class="orb" data-orb="${s.uid}" title="${escape(s.name)} · prayed ${s.count}×" style="left:${x}%;top:${y}%;width:${d}px;height:${d}px;background:${m.c};animation-delay:${delay}s">
+      <span class="orb-ico">${m.icon}</span><span class="orb-lbl">${escape((s.name.split(' ')[0]||s.name).slice(0,10))}</span></button>`;
+  }).join('');
+}
+function subjectCard(s){
+  const m=typeMeta(s.type), done=s.active===0;
+  const reqs=[...s.items].sort((a,b)=>(a.answered?1:0)-(b.answered?1:0))
+    .map(p=>`<div class="preq${p.answered?' ans':''}"><span class="dot"></span><span>${escape(p.request)}</span></div>`).join('');
+  const prayBtn=done?'':`<button class="prow-pray" data-pray="${escape(s.name)}">🙏 Pray</button>`;
+  const meta=`${s.active} active · ${s.answered} answered · prayed ${s.count}× · ${lastLiftedLine(s.last)}`;
+  return`<div class="prow ${done?'done':'faithful'}" id="subj-${s.uid}">
+    <div class="prow-head" data-toggle="${s.uid}">
+      <div class="orb-mini" style="background:${m.c}">${m.icon}</div>
+      <div class="prow-main">
+        <div class="prow-name">${escape(s.name)} <span class="type-chip">${escape(s.type)}</span></div>
+        <div class="prow-meta">${meta}</div>
+      </div>
+      ${prayBtn}
+      <span class="prow-chev">▾</span>
+    </div>
+    <div class="prow-body">
+      ${reqs}
+      <div class="heat-wrap"><div class="heat-label">Last 12 weeks of prayer</div>${heatHTML(s.days)}</div>
+    </div>
+  </div>`;
+}
 function renderPeople(){
   const grid=document.getElementById('people-grid');
-  const map={};
-  prayers.forEach(p=>{if(!map[p.person])map[p.person]={name:p.person,active:0,total:0,cat:p.category,last:p.createdAt||0};map[p.person].total++;if(!p.answered)map[p.person].active++;if((p.createdAt||0)>map[p.person].last)map[p.person].last=p.createdAt;});
+  if(!currentUser){grid.innerHTML='';return;}
+  const now=Date.now(), map={};
+  prayers.forEach(p=>{
+    const k=p.person||'Someone';
+    if(!map[k])map[k]={name:k,type:p.type||'Person',active:0,answered:0,first:p.createdAt||now,items:[]};
+    const m=map[k]; m.items.push(p);
+    if(p.answered)m.answered++; else m.active++;
+    if(p.type)m.type=p.type;
+    if((p.createdAt||now)<m.first)m.first=p.createdAt||now;
+  });
   const list=Object.values(map);
-  if(!list.length){grid.innerHTML=`<div class="empty"><div class="big">${icon('person',28)}</div><h3>No people yet</h3><p>Add a prayer to see people here.</p></div>`;return}
-  grid.innerHTML=list.map(person=>{
-    const[bg,fg]=getColor(person.name);
-    const ago=person.last?Math.round((Date.now()-person.last)/86400000):null;
-    return`<div class="person-card">
-      <div class="av" style="background:${bg};color:${fg}">${escape(initials(person.name))}</div>
-      <h3>${escape(person.name)}</h3>
-      <div class="detail">${escape(person.cat)}</div>
-      <div class="pc">${person.active} active prayer${person.active!==1?'s':''}</div>
-      ${ago!==null?`<div class="last">${ago===0?'Added today':`Added ${ago}d ago`}</div>`:''}
-    </div>`;
-  }).join('');
+  if(!list.length){grid.innerHTML=`<div class="empty"><div class="big">${icon('person',28)}</div><h3>Nothing on your map yet</h3><p>Add a prayer — a person, a job, an event, anything — and it appears here.</p></div>`;return}
+  const lifts=getLifts(currentUser.id);
+  list.forEach((s,idx)=>{const lf=lifts[s.name]||{count:0,last:0,days:{}};s.uid=idx;s.count=lf.count||0;s.last=lf.last||0;s.days=lf.days||{};});
+  const active=list.filter(s=>s.active>0);
+  const weekAgo=now-7*86400000;
+  const prayedThisWeek=Object.values(lifts).filter(l=>l.last>=weekAgo).length;
+  // 1 · Milestones (subjects prayed for 30+ days, oldest first)
+  const annivs=list.filter(s=>now-s.first>=30*86400000).sort((a,b)=>a.first-b.first);
+  // 2 · Constellation (by how often prayed)
+  const byCount=[...list].sort((a,b)=>b.count-a.count||b.active-a.active);
+  let html=`<div class="pc-band">
+    <div class="pc-stats">
+      <div class="pc-stat"><div class="n">${list.length}</div><div class="l">On your map</div></div>
+      <div class="pc-stat"><div class="n">${active.length}</div><div class="l">Active</div></div>
+      <div class="pc-stat"><div class="n">${prayedThisWeek}</div><div class="l">Prayed / 7d</div></div>
+    </div>
+    <div class="pc-spot pc-verse"><div class="pc-spot-txt"><div class="k">🕊 Keep watch</div><div class="v">"Devote yourselves to prayer, being watchful and thankful." — Col 4:2</div></div></div>
+  </div>`;
+  if(annivs.length){
+    html+=`<div class="pc-sec">🕊 Milestones</div><div class="anniv-strip">`+annivs.slice(0,10).map(s=>{
+      const m=typeMeta(s.type);
+      return`<div class="anniv-chip" data-pray="${escape(s.name)}"><div class="ac-ico" style="background:${m.c}">${m.icon}</div><div class="ac-tx"><div class="ac-name">${escape(s.name)}</div><div class="ac-dur">${humanDur(now-s.first)} of prayer</div></div></div>`;
+    }).join('')+`</div>`;
+  }
+  html+=`<div class="pc-sec">🌌 Prayer constellation</div><div class="constellation">${constellationHTML(byCount)}</div><p class="const-hint">Bigger orb = prayed for more often · tap to open</p>`;
+  const sorted=[...list].sort((a,b)=>(a.active===0?1:0)-(b.active===0?1:0)||b.count-a.count||b.active-a.active);
+  html+=`<div class="pc-sec">All · ${list.length}</div>`+sorted.map(subjectCard).join('');
+  grid.innerHTML=html;
+  grid.querySelectorAll('[data-orb]').forEach(o=>o.addEventListener('click',()=>{const el=document.getElementById('subj-'+o.dataset.orb);if(el){el.classList.add('open');el.scrollIntoView({behavior:'smooth',block:'center'});}}));
+  grid.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>togglePerson(b.dataset.toggle)));
+  grid.querySelectorAll('[data-pray]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openPrayNow(b.dataset.pray);}));
 }
 
 function renderAnswered(){
@@ -1962,6 +2138,7 @@ function openAdd(){
   document.getElementById('f-person').value='';
   document.getElementById('f-request').value='';
   document.getElementById('f-cat').value='Family';
+  document.getElementById('f-type').value='Person';
   document.getElementById('f-date').value='';
   document.getElementById('f-priv').value='Private';
   document.getElementById('f-note').value='';
@@ -1977,6 +2154,7 @@ function openEdit(id){
   document.getElementById('f-person').value=p.person;
   document.getElementById('f-request').value=p.request;
   document.getElementById('f-cat').value=p.category;
+  document.getElementById('f-type').value=p.type||'Person';
   document.getElementById('f-date').value=p.followUp||'';
   document.getElementById('f-priv').value=p.privacy;
   document.getElementById('f-note').value=p.answeredNote||'';
@@ -1991,6 +2169,7 @@ function openAnswered(id){
   document.getElementById('f-person').value=p.person;
   document.getElementById('f-request').value=p.request;
   document.getElementById('f-cat').value=p.category;
+  document.getElementById('f-type').value=p.type||'Person';
   document.getElementById('f-date').value=p.followUp||'';
   document.getElementById('f-priv').value=p.privacy;
   document.getElementById('f-note').value=p.answeredNote||'';
@@ -2015,6 +2194,7 @@ document.getElementById('modal-save').addEventListener('click',()=>{
       const was=prayers[idx];
       prayers[idx]={...was,person,request,
         category:document.getElementById('f-cat').value,
+      type:document.getElementById('f-type').value,
         followUp:document.getElementById('f-date').value,
         privacy:document.getElementById('f-priv').value,
         answeredNote:document.getElementById('f-note').value.trim(),
@@ -2026,6 +2206,7 @@ document.getElementById('modal-save').addEventListener('click',()=>{
   }else{
     prayers.unshift({id:uid4(),person,request,
       category:document.getElementById('f-cat').value,
+      type:document.getElementById('f-type').value,
       followUp:document.getElementById('f-date').value,
       privacy:document.getElementById('f-priv').value,
       answeredNote:'',answered:false,answeredDate:'',createdAt:Date.now()
@@ -2535,9 +2716,10 @@ function getVerseForPrayer(p){
   return verses[h%verses.length];
 }
 
-function openPrayNow(){
-  pnQueue=prayers.filter(p=>!p.answered);
-  if(!pnQueue.length){toast('No active prayers in your vault.');return;}
+function openPrayNow(personName){
+  const focus=typeof personName==='string'?personName:null;
+  pnQueue=prayers.filter(p=>!p.answered&&(!focus||(p.person||'Someone')===focus));
+  if(!pnQueue.length){toast(focus?('No active prayers for '+focus+'.'):'No active prayers in your vault.');return;}
   pnIndex=0;pnPrayedCount=0;
   document.getElementById('pn-done').classList.remove('show');
   document.getElementById('pn-card').style.display='';
@@ -2584,12 +2766,13 @@ document.getElementById('pn-close').addEventListener('click',()=>{
 document.getElementById('pn-done-close').addEventListener('click',()=>{
   document.getElementById('praynow-overlay').classList.remove('open');
 });
-document.getElementById('pn-prayed').addEventListener('click',()=>{pnPrayedCount++;pnIndex++;showPrayNowCard();});
+document.getElementById('pn-prayed').addEventListener('click',()=>{const p=pnQueue[pnIndex];if(p)recordLift(p.person||'Someone');pnPrayedCount++;pnIndex++;showPrayNowCard();});
 document.getElementById('pn-skip').addEventListener('click',()=>{pnIndex++;showPrayNowCard();});
 document.getElementById('pn-ans').addEventListener('click',()=>{
   const p=pnQueue[pnIndex];
   const idx=prayers.findIndex(x=>x.id===p.id);
   if(idx>=0){prayers[idx].answered=true;prayers[idx].answeredDate=todayStr();prayers[idx].answeredNote='Marked answered during Pray Now.';savePrayers(currentUser.id,prayers);}
+  if(p)recordLift(p.person||'Someone');
   pnPrayedCount++;pnIndex++;showPrayNowCard();
 });
 
