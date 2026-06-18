@@ -2053,6 +2053,9 @@ function recordLift(name){
 }
 const TYPE_META={Person:{icon:'🙏',c:'#4a7850'},Job:{icon:'💼',c:'#b0720c'},Event:{icon:'📅',c:'#2f6b8a'},Other:{icon:'✨',c:'#7a5ea8'}};
 function typeMeta(t){ return TYPE_META[t]||TYPE_META.Person; }
+// Orb colour by prayer category (Health green, Finances blue, Family gold, …)
+const CATEGORY_META={Health:{c:'#4a7850'},Finances:{c:'#2f6b8a'},Family:{c:'#c2880c'},Work:{c:'#2f8a7b'},Faith:{c:'#7a5ea8'},Relationships:{c:'#b5546a'},Other:{c:'#6b7785'}};
+function catMeta(cat){ return CATEGORY_META[cat]||CATEGORY_META.Other; }
 function lastLiftedLine(last){
   if(!last)return'Not yet prayed';
   const d=Math.floor((Date.now()-last)/86400000);
@@ -2088,7 +2091,7 @@ function constellationHTML(items){
     else{const ring=Math.ceil(idx/6),inRing=(idx-1)%6,ang=(inRing/6)*Math.PI*2+ring*0.7,rad=20+ring*15;
       x=50+Math.cos(ang)*rad; y=50+Math.sin(ang)*rad*0.8;}
     const d=44+Math.round((s.count/maxC)*48), m=typeMeta(s.type), delay=((idx%6)*0.5).toFixed(1);
-    return`<button class="orb" data-orb="${s.uid}" title="${escape(s.name)} · prayed ${s.count}×" style="left:${x}%;top:${y}%;width:${d}px;height:${d}px;background:${m.c};animation-delay:${delay}s">
+    return`<button class="orb" data-orb="${s.uid}" title="${escape(s.name)} · prayed ${s.count}×" style="left:${x}%;top:${y}%;width:${d}px;height:${d}px;background:${catMeta(s.category).c};animation-delay:${delay}s">
       <span class="orb-ico">${m.icon}</span><span class="orb-lbl">${escape((s.name.split(' ')[0]||s.name).slice(0,10))}</span></button>`;
   }).join('');
 }
@@ -2107,7 +2110,7 @@ function subjectCard(s,kind){
   const meta=`${s.active} active · ${s.answered} answered · ${lastLiftedLine(s.last)}`;
   return`<div class="prow ${kind}" id="subj-${s.uid}">
     <div class="prow-head" data-toggle="${s.uid}">
-      <div class="orb-mini" style="background:${m.c}">${m.icon}</div>
+      <div class="orb-mini" style="background:${catMeta(s.category).c}">${m.icon}</div>
       <div class="prow-main">
         <div class="prow-name">${escape(s.name)} <span class="type-chip">${escape(s.type)}</span></div>
         <div class="prow-meta">${meta}</div>
@@ -2128,16 +2131,17 @@ function renderPeople(){
   const now=Date.now(), map={};
   prayers.forEach(p=>{
     const k=p.person||'Someone';
-    if(!map[k])map[k]={name:k,type:p.type||'Person',active:0,answered:0,first:p.createdAt||now,items:[]};
+    if(!map[k])map[k]={name:k,type:p.type||'Person',active:0,answered:0,first:p.createdAt||now,items:[],cats:{}};
     const m=map[k]; m.items.push(p);
     if(p.answered)m.answered++; else m.active++;
     if(p.type)m.type=p.type;
+    if(p.category)m.cats[p.category]=(m.cats[p.category]||0)+1;
     if((p.createdAt||now)<m.first)m.first=p.createdAt||now;
   });
   const list=Object.values(map);
   if(!list.length){grid.innerHTML=`<div class="empty"><div class="big">${icon('person',28)}</div><h3>Nothing on your map yet</h3><p>Add a prayer — a person, a job, an event, anything — and it appears here.</p></div>`;return}
   const lifts=getLifts(currentUser.id);
-  list.forEach((s,idx)=>{const lf=lifts[s.name]||{count:0,last:0,days:{}};s.uid=idx;s.count=lf.count||0;s.last=lf.last||0;s.days=lf.days||{};s.daysSince=s.last?Math.floor((now-s.last)/86400000):null;});
+  list.forEach((s,idx)=>{const lf=lifts[s.name]||{count:0,last:0,days:{}};s.uid=idx;s.count=lf.count||0;s.last=lf.last||0;s.days=lf.days||{};s.daysSince=s.last?Math.floor((now-s.last)/86400000):null;s.category=Object.entries(s.cats||{}).sort((a,b)=>b[1]-a[1])[0]?.[0]||'Other';});
   const active=list.filter(s=>s.active>0);
   const weekAgo=now-7*86400000;
   const prayedThisWeek=Object.values(lifts).filter(l=>l.last>=weekAgo).length;
@@ -2162,7 +2166,7 @@ function renderPeople(){
       <div class="pc-stat"><div class="n">${prayedThisWeek}</div><div class="l">Prayed / 7d</div></div>
     </div>
     <div class="pc-spot">
-      <div class="orb-mini" style="background:${sm.c}">${sm.icon}</div>
+      <div class="orb-mini" style="background:${catMeta(spot.category).c}">${sm.icon}</div>
       <div class="pc-spot-txt"><div class="k">${spot.active===0?'🕊 Answered':'🙏 Needs prayer'}</div><div class="v">${spotMsg}</div></div>
       ${spot.active===0?'':`<button class="btn btn-primary btn-sm" data-pray="${escape(spot.name)}">Pray now</button>`}
     </div>
@@ -2170,10 +2174,11 @@ function renderPeople(){
   if(annivs.length){
     html+=`<div class="pc-sec">🕊 Milestones</div><div class="anniv-strip">`+annivs.slice(0,10).map(s=>{
       const m=typeMeta(s.type);
-      return`<div class="anniv-chip" data-pray="${escape(s.name)}"><div class="ac-ico" style="background:${m.c}">${m.icon}</div><div class="ac-tx"><div class="ac-name">${escape(s.name)}</div><div class="ac-dur">${humanDur(now-s.first)} of prayer</div></div></div>`;
+      return`<div class="anniv-chip" data-pray="${escape(s.name)}"><div class="ac-ico" style="background:${catMeta(s.category).c}">${m.icon}</div><div class="ac-tx"><div class="ac-name">${escape(s.name)}</div><div class="ac-dur">${humanDur(now-s.first)} of prayer</div></div></div>`;
     }).join('')+`</div>`;
   }
-  html+=`<div class="pc-sec">🌌 Prayer constellation</div><div class="constellation">${constellationHTML(byCount)}</div><p class="const-hint">Bigger orb = prayed for more often · tap to open</p>`;
+  const catLegend=Object.entries(CATEGORY_META).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#5a6e80"><span style="width:10px;height:10px;border-radius:50%;background:${v.c};display:inline-block"></span>${k}</span>`).join('');
+  html+=`<div class="pc-sec">🌌 Prayer constellation</div><div class="constellation">${constellationHTML(byCount)}</div><p class="const-hint">Bigger orb = prayed for more often · colour = category · tap to open</p><div style="display:flex;flex-wrap:wrap;gap:14px;margin:8px 2px 4px">${catLegend}</div>`;
   const section=(title,arr,kind)=>arr.length?`<div class="pc-sec">${title}</div>`+arr.map(s=>subjectCard(s,kind)).join(''):'';
   html+=section(`🕊 Needs your prayer · ${needs.length}`,needs,'urgent');
   html+=section(`🔥 Faithfully carrying · ${faithful.length}`,faithful,'faithful');
