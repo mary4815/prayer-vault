@@ -2999,6 +2999,7 @@ function genGroupCode(){
   return code;
 }
 async function createGroup(name,desc){
+  if(!requirePlan('church'))return;   // Church tier only — backstop for every entry path
   if(useSupa()){
     try{
       const code=genGroupCode(), id=uid4(), ownerName=currentUser.first+' '+(currentUser.last||'');
@@ -3185,6 +3186,7 @@ async function renderLeaderDashboard(){
   el.innerHTML=html;
 }
 function openCreateGroupModal(){
+  if(!requirePlan('church'))return;   // gate before showing the form — sends free users to Pricing
   const nameEl=document.getElementById('f-group-name');
   const descEl=document.getElementById('f-group-desc');
   if(nameEl)nameEl.value='';
@@ -3274,23 +3276,35 @@ function closeWallModal(){
 document.getElementById('add-wall-req')?.addEventListener('click',openWallModal);
 document.getElementById('wall-modal-cancel')?.addEventListener('click',closeWallModal);
 document.getElementById('wall-modal-bd')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeWallModal();});
-document.getElementById('wall-modal-save')?.addEventListener('click',async ()=>{
+let wallPosting=false;
+document.getElementById('wall-modal-save')?.addEventListener('click',async (e)=>{
+  if(wallPosting)return;                       // ignore rapid double-clicks
   const msg=(document.getElementById('f-wall-req').value||'').trim();
   if(!msg){toast('Write a request first.');return;}
+  wallPosting=true;
+  const btn=e.currentTarget; if(btn)btn.disabled=true;
   const person=(currentUser.first||'')+' '+(currentUser.last||'');
   const id=uid4();
-  if(useSupa()){
-    try{
-      const r=await supa.from('wall_posts').insert({id,group_id:null,author_id:currentUser.id,name:person,author_name:person,text:msg,pray_count:0});
-      if(r.error)throw r.error;
-    }catch(e){syncErr(e);}
-  }
+  // Optimistic: show the card and close the modal instantly, then sync in the
+  // background. The modal closing is itself the strongest guard against dupes.
   const wall=getWall(currentUser.id);
   wall.unshift({id,person,request:msg,prayers:0,ts:Date.now()});
   saveWall(currentUser.id,wall);
   closeWallModal();
   renderWall();
   toast('Your request has been posted.');
+  if(useSupa()){
+    try{
+      const r=await supa.from('wall_posts').insert({id,group_id:null,author_id:currentUser.id,name:person,author_name:person,text:msg,pray_count:0});
+      if(r.error)throw r.error;
+    }catch(err){
+      // Server rejected it — roll back the optimistic card so it doesn't linger.
+      saveWall(currentUser.id,getWall(currentUser.id).filter(x=>x.id!==id));
+      renderWall();
+      syncErr(err);
+    }
+  }
+  wallPosting=false; if(btn)btn.disabled=false;
 });
 
 // ═══ CONFESSION ═══
