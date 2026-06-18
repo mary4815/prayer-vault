@@ -1559,7 +1559,7 @@ async function loadAllData(uid){
     }
     cache.groups=groups;
     const {data:wp}=await supa.from('wall_posts').select('*').is('group_id',null).order('created_at',{ascending:false}).limit(50);
-    cache.wall=(wp||[]).map(r=>({id:r.id,person:r.author_name||r.name||'Someone',request:r.text,prayers:r.pray_count||0,ts:r.created_at?new Date(r.created_at).getTime():Date.now()}));
+    cache.wall=(wp||[]).map(r=>({id:r.id,author_id:r.author_id,person:r.author_name||r.name||'Someone',request:r.text,prayers:r.pray_count||0,ts:r.created_at?new Date(r.created_at).getTime():Date.now()}));
   }catch(e){syncErr(e);}
 }
 
@@ -3288,7 +3288,7 @@ document.getElementById('wall-modal-save')?.addEventListener('click',async (e)=>
   // Optimistic: show the card and close the modal instantly, then sync in the
   // background. The modal closing is itself the strongest guard against dupes.
   const wall=getWall(currentUser.id);
-  wall.unshift({id,person,request:msg,prayers:0,ts:Date.now()});
+  wall.unshift({id,author_id:currentUser.id,person,request:msg,prayers:0,ts:Date.now()});
   saveWall(currentUser.id,wall);
   closeWallModal();
   renderWall();
@@ -3330,11 +3330,21 @@ function renderConfession(){
           <strong>${escape(it.priest)}</strong>
           <p class="desc" style="margin:4px 0">${escape((it.contact||'').replace(/\n/g,' · '))}${it.msg?' — '+escape(it.msg):''}</p>
         </div>
-        <span class="tag t-cat">${it.status==='pending'?'Pending':escape(it.status)}</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span class="tag t-cat">${it.status==='pending'?'Pending':escape(it.status)}</span>
+          <button class="cf-del" data-cf-del="${escape(String(it.id))}" title="Delete this request" aria-label="Delete this request" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:6px">&times;</button>
+        </div>
       </div>
       <div style="font-size:12px;color:var(--muted)">${when}</div>
     </div>`;
   }).join('');
+  list.querySelectorAll('[data-cf-del]').forEach(b=>b.addEventListener('click',function(){ deleteConfession(this.dataset.cfDel); }));
+}
+async function deleteConfession(id){
+  if(!confirm('Delete this request? This cannot be undone.'))return;
+  saveConfessions(currentUser.id, getConfessions(currentUser.id).filter(x=>String(x.id)!==String(id)));   // syncDiff propagates the delete to Supabase
+  renderConfession();
+  toast('Request deleted.');
 }
 document.getElementById('cf-send')?.addEventListener('click',async ()=>{
   if(!requirePlan('church'))return;   // Confession request inbox is a Church feature
