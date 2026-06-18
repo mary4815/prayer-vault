@@ -1425,6 +1425,19 @@ button{cursor:pointer}
   </div>
 </div>
 
+<!-- Reusable styled prompt / confirm / alert (replaces native browser dialogs) -->
+<div class="backdrop" id="ask-bd">
+  <div class="modal" style="width:min(440px,calc(100vw - 32px))">
+    <h2 id="ask-title"></h2>
+    <p class="msub" id="ask-msg" style="margin-bottom:16px"></p>
+    <div class="field" id="ask-field" style="margin-bottom:0"><input id="ask-input"/></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="ask-cancel">Cancel</button>
+      <button class="btn btn-primary" id="ask-ok">OK</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1684,6 +1697,47 @@ function btnLoading(btn,label){
   btn.disabled=true; btn.textContent=label||'Working…';
   return ()=>{ btn.disabled=wasDisabled; btn.textContent=orig; };
 }
+
+// Branded replacements for the browser's native prompt()/confirm()/alert(),
+// which can't be styled and look like system error popups. One backdrop,
+// promise-based so callers can `await` them just like the natives.
+function appDialog(opts){
+  return new Promise(resolve=>{
+    const bd=document.getElementById('ask-bd');
+    const inputEl=document.getElementById('ask-input');
+    const fieldEl=document.getElementById('ask-field');
+    const msgEl=document.getElementById('ask-msg');
+    const okBtn=document.getElementById('ask-ok');
+    const cancelBtn=document.getElementById('ask-cancel');
+    document.getElementById('ask-title').textContent=opts.title||'';
+    msgEl.textContent=opts.message||'';
+    msgEl.style.display=opts.message?'block':'none';
+    const useInput=!!opts.input;
+    fieldEl.style.display=useInput?'block':'none';
+    if(useInput){ inputEl.value=opts.value!=null?opts.value:''; inputEl.placeholder=opts.placeholder||''; inputEl.type=opts.inputType||'text'; }
+    okBtn.textContent=opts.okText||'OK';
+    cancelBtn.textContent=opts.cancelText||'Cancel';
+    cancelBtn.style.display=opts.hideCancel?'none':'inline-flex';
+    okBtn.className='btn '+(opts.danger?'btn-danger':'btn-primary');
+    let done=false;
+    function finish(val){ if(done)return; done=true; bd.classList.remove('open'); cleanup(); resolve(val); }
+    function onOk(){ finish(useInput?inputEl.value:true); }
+    function onCancel(){ finish(useInput?null:false); }
+    function onBackdrop(e){ if(e.target===bd) onCancel(); }
+    function onKey(e){ if(e.key==='Enter'&&useInput){ e.preventDefault(); onOk(); } else if(e.key==='Escape'){ onCancel(); } }
+    function cleanup(){ okBtn.removeEventListener('click',onOk); cancelBtn.removeEventListener('click',onCancel); bd.removeEventListener('click',onBackdrop); document.removeEventListener('keydown',onKey); }
+    okBtn.addEventListener('click',onOk);
+    cancelBtn.addEventListener('click',onCancel);
+    bd.addEventListener('click',onBackdrop);
+    document.addEventListener('keydown',onKey);
+    bd.classList.add('open');
+    setTimeout(()=>{ if(useInput){ inputEl.focus(); inputEl.select(); } else { okBtn.focus(); } },30);
+  });
+}
+// prompt -> string|null ; confirm -> bool ; alert -> void
+const appPrompt=(message,value,opts={})=>appDialog({title:opts.title||'Enter a value',message,input:true,value,placeholder:opts.placeholder||'',inputType:opts.inputType,okText:opts.okText});
+const appConfirm=(message,opts={})=>appDialog({title:opts.title||'Are you sure?',message,okText:opts.okText||'Confirm',cancelText:opts.cancelText,danger:opts.danger!==false});
+const appAlert=(message,opts={})=>appDialog({title:opts.title||'Notice',message,hideCancel:true,okText:'OK'});
 
 // Build the app's user object from a Supabase auth user + their profile row.
 async function onAuthed(sbUser){
@@ -2246,8 +2300,8 @@ document.getElementById('modal-save').addEventListener('click',()=>{
   
 });
 
-function delPrayer(id){
-  if(!confirm('Delete this prayer permanently?'))return;
+async function delPrayer(id){
+  if(!await appConfirm('Delete this prayer permanently?',{title:'Delete prayer',okText:'Delete'}))return;
   prayers=prayers.filter(x=>x.id!=id);
   savePrayers(currentUser.id,prayers);
   renderAll();toast('Prayer deleted.');
@@ -2542,8 +2596,8 @@ async function startUpgrade(plan,btn){
     const res=await fetch(API_BASE+'/api/subscribe/checkout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')},body:JSON.stringify({plan})});
     if(res.ok){ const j=await res.json(); if(j.url){ location.href=j.url; return; } }
     const txt=await res.text().catch(()=>'');
-    alert('Upgrade failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''));
-  }catch(e){ alert('Upgrade error: '+((e&&e.message)||e)); }
+    appAlert('Upgrade failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''),{title:'Checkout problem'});
+  }catch(e){ appAlert('Upgrade error: '+((e&&e.message)||e),{title:'Checkout problem'}); }
   finally{ done(); }
 }
 async function openBillingPortal(btn){
@@ -2555,8 +2609,8 @@ async function openBillingPortal(btn){
     const res=await fetch(API_BASE+'/api/billing/portal',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')}});
     if(res.ok){ const j=await res.json(); if(j.url){ location.href=j.url; return; } }
     const txt=await res.text().catch(()=>'');
-    alert('Manage Billing failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''));
-  }catch(e){ alert('Manage Billing error: '+((e&&e.message)||e)); }
+    appAlert('Manage Billing failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''),{title:'Billing problem'});
+  }catch(e){ appAlert('Manage Billing error: '+((e&&e.message)||e),{title:'Billing problem'}); }
   finally{ done(); }
 }
 document.getElementById('plan-grid')?.addEventListener('click',e=>{
@@ -2675,8 +2729,8 @@ document.getElementById('export-text').addEventListener('click',()=>{
 });
 
 document.getElementById('delete-account').addEventListener('click',async ()=>{
-  if(!confirm('Are you absolutely sure? This will permanently delete your account and ALL your prayer data. This cannot be undone.'))return;
-  if(!confirm('Last chance — delete everything permanently?'))return;
+  if(!await appConfirm('This will permanently delete your account and ALL your prayer data. This cannot be undone.',{title:'Delete account?',okText:'Delete everything'}))return;
+  if(!await appConfirm('Last chance — delete everything permanently?',{title:'Are you absolutely sure?',okText:'Yes, delete it all'}))return;
   if(useSupa()){
     const uidDel=currentUser.id;
     try{
@@ -3108,7 +3162,7 @@ async function fetchGroupMembers(groupId){
 }
 async function removeMember(groupId,userId){
   if(userId===currentUser.id){ toast("You're the leader — delete the group instead of removing yourself."); return; }
-  if(!confirm('Remove this member from the group?'))return;
+  if(!await appConfirm('Remove this member from the group?',{title:'Remove member',okText:'Remove'}))return;
   if(useSupa()){
     try{ const r=await supa.from('group_members').delete().eq('group_id',groupId).eq('user_id',userId); if(r.error)throw r.error;
       const g=cache.groups.find(x=>x.id===groupId); if(g&&Array.isArray(g.members)&&g.members.length>1)g.members.pop();
@@ -3121,8 +3175,8 @@ async function removeMember(groupId,userId){
 }
 async function renameGroup(groupId){
   const g=getGroups(currentUser.id).find(x=>x.id===groupId); if(!g)return;
-  const name=prompt('Group name:',g.name); if(name===null)return;
-  const desc=prompt('Description:',g.desc||''); if(desc===null)return;
+  const name=await appPrompt('Group name',g.name,{title:'Rename Group',okText:'Save'}); if(name===null)return;
+  const desc=await appPrompt('Description',g.desc||'',{title:'Group Description',okText:'Save'}); if(desc===null)return;
   const newName=(name.trim()||g.name), newDesc=desc.trim();
   if(useSupa()){
     try{ const r=await supa.from('groups').update({ name:newName, description:newDesc }).eq('id',groupId); if(r.error)throw r.error; }catch(e){ syncErr(e); return; }
@@ -3132,7 +3186,7 @@ async function renameGroup(groupId){
   toast('Group updated.'); renderLeaderDashboard(); renderGroups();
 }
 async function deleteGroupAsOwner(groupId){
-  if(!confirm('Delete this group for everyone? This cannot be undone.'))return;
+  if(!await appConfirm('Delete this group for everyone? This cannot be undone.',{title:'Delete group',okText:'Delete'}))return;
   if(useSupa()){
     try{ const r=await supa.from('groups').delete().eq('id',groupId); if(r.error)throw r.error; cache.groups=cache.groups.filter(g=>g.id!==groupId); }catch(e){ syncErr(e); return; }
   }else{
@@ -3141,7 +3195,7 @@ async function deleteGroupAsOwner(groupId){
   toast('Group deleted.'); renderLeaderDashboard(); renderGroups();
 }
 async function postAnnouncement(groupId){
-  const text=prompt('Announcement to post to the group wall:'); if(text===null)return;
+  const text=await appPrompt('Announcement to post to the group wall','',{title:'Post Announcement',okText:'Post'}); if(text===null)return;
   if(!text.trim()){ toast('Write something first.'); return; }
   const body='📢 '+text.trim();
   if(useSupa()){
@@ -3345,7 +3399,7 @@ function renderConfession(){
   list.querySelectorAll('[data-cf-del]').forEach(b=>b.addEventListener('click',function(){ deleteConfession(this.dataset.cfDel); }));
 }
 async function deleteConfession(id){
-  if(!confirm('Delete this request? This cannot be undone.'))return;
+  if(!await appConfirm('Delete this request? This cannot be undone.',{title:'Delete request',okText:'Delete'}))return;
   saveConfessions(currentUser.id, getConfessions(currentUser.id).filter(x=>String(x.id)!==String(id)));   // syncDiff propagates the delete to Supabase
   renderConfession();
   toast('Request deleted.');
@@ -3423,7 +3477,7 @@ function renderDonate(){
       // Fire one more wake now; the blocking prompt() below gives the
       // cold-start 20-50s of cover while the user types an amount.
       warmBackend(true);
-      const amt=prompt('Enter donation amount ($):','25');
+      const amt=await appPrompt('How much would you like to give? ($)','25',{title:'Make a Donation',inputType:'number',okText:'Continue'});
       if(amt===null)return;
       const n=parseFloat(amt);
       if(!n||n<=0){toast('Enter a valid amount.');return;}
@@ -3791,8 +3845,8 @@ document.getElementById('chat-input').addEventListener('keydown',e=>{
 document.getElementById('chat-input').addEventListener('input',function(){
   this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';
 });
-document.getElementById('clear-chat').addEventListener('click',()=>{
-  if(!confirm('Clear this conversation?'))return;
+document.getElementById('clear-chat').addEventListener('click',async ()=>{
+  if(!await appConfirm('Clear this conversation?',{title:'Clear chat',okText:'Clear'}))return;
   localStorage.removeItem(chatKey(currentUser.id));
   renderChat();
   toast('Conversation cleared.');
