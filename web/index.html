@@ -614,11 +614,15 @@ button{cursor:pointer}
 @media(max-width:860px){
   .shell{grid-template-columns:1fr}.sidebar{display:none}.main{padding:14px 14px 96px}
   .pcard{grid-template-columns:40px 1fr}.card-actions{flex-direction:row;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-  .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 0 max(6px,env(safe-area-inset-bottom));z-index:50;justify-content:space-around;align-items:center}
-  .mbn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);font-size:11px;font-weight:700;padding:4px 10px}
-  .mbn .ni{font-size:20px}.mbn.active{color:var(--sage)}
-  .mob-fab{width:52px;height:52px;border-radius:50%;background:var(--sage);color:#fff;border:none;font-size:26px;display:grid;place-items:center;box-shadow:0 8px 24px rgba(74,120,80,.38);margin-top:-12px}
+  .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 2px max(8px,env(safe-area-inset-bottom));z-index:50;align-items:center}
+  .mbn{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--muted);font-size:11px;font-weight:700;padding:6px 2px;min-height:50px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-tap-highlight-color:transparent}
+  .mbn .ni{font-size:23px;line-height:1}.mbn.active{color:var(--sage)}
+  .mob-fab{flex:0 0 auto;width:56px;height:56px;border-radius:50%;background:var(--sage);color:#fff;border:none;font-size:30px;display:grid;place-items:center;box-shadow:0 8px 24px rgba(74,120,80,.38);margin:-16px 4px 0}
   .answered-hero{flex-direction:column;align-items:flex-start}
+}
+@media(max-width:380px){
+  .mbn{font-size:10px;padding:6px 0}.mbn .ni{font-size:21px}
+  .mob-fab{width:50px;height:50px;font-size:26px}
 }
 @media(max-width:560px){
   .stats-row{grid-template-columns:1fr 1fr}.field-row{grid-template-columns:1fr}
@@ -1280,7 +1284,7 @@ button{cursor:pointer}
   <!-- MOBILE NAV -->
   <nav class="mob-nav">
     <button class="mbn active" data-page="today"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 10L10 3l7 7"/><path d="M5 8.5V17h4v-4h2v4h4V8.5"/></svg></span>Today</button>
-    <button class="mbn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Prayer Map</button>
+    <button class="mbn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Map</button>
     <button class="mob-fab" data-open-add>+</button>
     <button class="mbn" data-page="answered"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="10" r="8"/><path d="m7 10 2 2 4-4"/></svg></span>Answered</button>
     <button class="mbn" data-page="profile"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Profile</button>
