@@ -1945,12 +1945,17 @@ const MOB_MORE_PAGES=[
 function renderMobMore(){
   const list=document.getElementById('mob-more-list');
   if(!list)return;
-  list.innerHTML=MOB_MORE_PAGES.map(p=>`<button class="btn btn-ghost" style="width:100%;justify-content:flex-start" data-mob-page="${p.page}">${escape(p.label)}</button>`).join('');
+  list.innerHTML=MOB_MORE_PAGES.map(p=>`<button class="btn btn-ghost" style="width:100%;justify-content:flex-start" data-mob-page="${p.page}">${escape(p.label)}</button>`).join('')
+    +`<button id="mob-logout" style="width:100%;margin-top:8px;padding:12px 14px;border-radius:10px;border:1px solid #e6c9cb;background:#fff;color:#b4232a;font-weight:700;font-size:14px;cursor:pointer;text-align:center">⏻&nbsp; Sign Out</button>`;
   list.querySelectorAll('[data-mob-page]').forEach(b=>{
     b.addEventListener('click',()=>{
       document.getElementById('mob-more-backdrop').classList.remove('open');
       showPage(b.dataset.mobPage);
     });
+  });
+  list.querySelector('#mob-logout')?.addEventListener('click',()=>{
+    document.getElementById('mob-more-backdrop').classList.remove('open');
+    document.getElementById('do-logout').click();
   });
 }
 document.getElementById('mob-more-btn')?.addEventListener('click',()=>{
