@@ -1505,6 +1505,9 @@ function icon(name,size=14){
 // localStorage (offline demo). The synchronous render layer is untouched —
 // it always reads through the get*/save* helpers below.
 const UK='pmv_users',SK='pmv_session';
+// One-time cleanup: wipe the old seeded demo Prayer Wall posts that were cached
+// before launch, so existing browsers also start with an empty wall.
+try{if(!localStorage.getItem('pmv_wall_seed_cleared')){Object.keys(localStorage).filter(k=>k.startsWith('pmv_wall_')).forEach(k=>localStorage.removeItem(k));localStorage.setItem('pmv_wall_seed_cleared','1');}}catch(e){}
 const get=k=>{try{return JSON.parse(localStorage.getItem(k))||null}catch{return null}};
 const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const getUsers=()=>get(UK)||[];
@@ -3405,14 +3408,6 @@ function renderWall(){
   const grid=document.getElementById('wall-grid');
   if(!grid)return;
   let wall=getWall(currentUser.id);
-  if(!wall.length && !useSupa()){
-    wall=[
-      {id:1,person:'Emma Wright',request:'Starting a new job next week — nervous and praying for confidence.',prayers:7,ts:Date.now()-2*3600000},
-      {id:2,person:'Ruth Mensah',request:'My father was diagnosed this week. Praying for peace and wisdom for the doctors.',prayers:14,ts:Date.now()-5*3600000},
-      {id:3,person:'Clara Lee',request:'Marriage has been hard lately. Asking for grace and restoration.',prayers:5,ts:Date.now()-86400000},
-    ];
-    saveWall(currentUser.id,wall);
-  }
   if(!wall.length){
     grid.innerHTML=`<div class="gcard" style="grid-column:1/-1;text-align:center;padding:28px;color:var(--muted)">${icon('group',24)}<h3 style="margin-top:8px">The wall is quiet</h3><p style="font-size:13px">Be the first to share a prayer request with the community.</p></div>`;
     return;
