@@ -37,6 +37,7 @@ button{cursor:pointer}
 
 /* ── AUTH ── */
 #auth-screen{display:none;min-height:100vh}
+#auth-topbar{display:none}
 .auth-left{flex:1;background:linear-gradient(160deg,var(--navy2) 0%,var(--navy) 60%,#143520 100%);display:flex;flex-direction:column;justify-content:center;padding:60px 56px;color:#fff}
 .auth-logo{display:flex;align-items:center;gap:14px;margin-bottom:44px}
 .auth-logo-icon{width:48px;height:48px;border-radius:12px;background:rgba(232,201,106,.15);border:1.5px solid rgba(232,201,106,.4);display:grid;place-items:center;padding:7px;flex-shrink:0}.auth-logo-icon svg{width:100%;height:100%}
@@ -627,7 +628,11 @@ button{cursor:pointer}
 @media(max-width:560px){
   .stats-row{grid-template-columns:1fr 1fr}.field-row{grid-template-columns:1fr}
   .topbar{flex-direction:column}.filters{flex-direction:column;align-items:stretch}
-  #auth-screen{flex-direction:column}.auth-right{order:-1;width:100%;padding:32px 20px 26px}.auth-left{padding:22px 20px 40px}.auth-left h1{font-size:24px;margin-bottom:10px}.auth-left>p{margin-bottom:22px}
+  #auth-screen{flex-direction:column}.auth-left{padding:28px 20px}.auth-right{width:100%;padding:28px 20px}
+  #auth-topbar{display:flex;gap:10px;padding:12px 14px;position:sticky;top:0;background:#fff;z-index:30;border-bottom:1px solid var(--line)}
+  .auth-top-btn{flex:1;padding:16px 10px;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .auth-top-btn.primary{background:var(--sage);color:#fff;border:none}
+  .auth-top-btn.ghost{background:#fff;color:var(--sage);border:2px solid var(--sage)}
   .agrid{grid-template-columns:1fr}.pgrid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
@@ -636,6 +641,10 @@ button{cursor:pointer}
 
 <!-- ═══ AUTH SCREEN ═══ -->
 <div id="auth-screen">
+  <div id="auth-topbar">
+    <button class="auth-top-btn primary" data-auth-jump="login">Sign In</button>
+    <button class="auth-top-btn ghost" data-auth-jump="signup">Sign Up</button>
+  </div>
   <div class="auth-left">
     <div class="auth-logo">
       <div class="auth-logo-icon"><svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="16" y="3" width="4" height="20" rx="2" fill="#f0d070"/><rect x="8" y="11" width="20" height="4" rx="2" fill="#f0d070"/><path d="M18 33c0 0-8-5.5-8-10.5C10 19 12.5 17.5 15 19c1 .5 1.5 1 3 2.5 1.5-1.5 2-2 3-2.5 2.5-1.5 5 0 5 3.5C26 27.5 18 33 18 33z" fill="#f0d070"/></svg></div>
@@ -1680,6 +1689,12 @@ document.querySelectorAll('.atab').forEach(b=>b.addEventListener('click',()=>{
 }));
 document.getElementById('go-signup').addEventListener('click',()=>document.querySelector('[data-auth="signup"]').click());
 document.getElementById('go-login').addEventListener('click',()=>document.querySelector('[data-auth="login"]').click());
+document.querySelectorAll('[data-auth-jump]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelector(`[data-auth="${b.dataset.authJump}"]`)?.click();
+    document.querySelector('.auth-right')?.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
 function showAuthErr(msg){const e=document.getElementById('auth-err');e.textContent=msg;e.style.display='block'}
 
 /* ── Supabase backend config — paste your keys here (see prayer-vault/SETUP.md) ── */
