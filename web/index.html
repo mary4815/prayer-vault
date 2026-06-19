@@ -629,9 +629,10 @@ button{cursor:pointer}
   .stats-row{grid-template-columns:1fr 1fr}.field-row{grid-template-columns:1fr}
   .topbar{flex-direction:column}.filters{flex-direction:column;align-items:stretch}
   #auth-screen{flex-direction:column}.auth-left{padding:28px 20px;position:relative}.auth-right{width:100%;padding:28px 20px}
-  .hero-auth-links{display:flex;gap:20px;position:absolute;top:30px;right:20px;z-index:5}
+  .hero-auth-links{display:flex;align-items:center;gap:7px;position:absolute;top:30px;right:20px;z-index:5}
   .hero-auth-links a{color:#fff;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;-webkit-tap-highlight-color:transparent}
   .hero-auth-links a.up{color:#f0d070}
+  .hero-auth-links .sep{color:rgba(255,255,255,.5);font-weight:700;font-size:15px}
   .agrid{grid-template-columns:1fr}.pgrid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
@@ -643,6 +644,7 @@ button{cursor:pointer}
   <div class="auth-left">
     <nav class="hero-auth-links">
       <a data-auth-jump="login">Sign In</a>
+      <span class="sep">/</span>
       <a class="up" data-auth-jump="signup">Sign Up</a>
     </nav>
     <div class="auth-logo">
