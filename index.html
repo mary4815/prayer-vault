@@ -15,6 +15,10 @@
     padding: 0 !important;
     z-index: 99999;
   }
+  /* When printing the journal: fully remove the live app (not just hide it) so
+     it can't overlap, and let the doc flow normally across multiple pages. */
+  body.printing > *:not(#print-area){ display: none !important; }
+  body.printing #print-area{ position: static !important; width: auto !important; }
   @page { margin: 18mm 20mm; }
 }
 </style>
@@ -33,6 +37,7 @@ button{cursor:pointer}
 
 /* ── AUTH ── */
 #auth-screen{display:none;min-height:100vh}
+.hero-auth-links{display:none}
 .auth-left{flex:1;background:linear-gradient(160deg,var(--navy2) 0%,var(--navy) 60%,#143520 100%);display:flex;flex-direction:column;justify-content:center;padding:60px 56px;color:#fff}
 .auth-logo{display:flex;align-items:center;gap:14px;margin-bottom:44px}
 .auth-logo-icon{width:48px;height:48px;border-radius:12px;background:rgba(232,201,106,.15);border:1.5px solid rgba(232,201,106,.4);display:grid;place-items:center;padding:7px;flex-shrink:0}.auth-logo-icon svg{width:100%;height:100%}
@@ -610,16 +615,24 @@ button{cursor:pointer}
 @media(max-width:860px){
   .shell{grid-template-columns:1fr}.sidebar{display:none}.main{padding:14px 14px 96px}
   .pcard{grid-template-columns:40px 1fr}.card-actions{flex-direction:row;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-  .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 0 max(6px,env(safe-area-inset-bottom));z-index:50;justify-content:space-around;align-items:center}
-  .mbn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);font-size:11px;font-weight:700;padding:4px 10px}
-  .mbn .ni{font-size:20px}.mbn.active{color:var(--sage)}
-  .mob-fab{width:52px;height:52px;border-radius:50%;background:var(--sage);color:#fff;border:none;font-size:26px;display:grid;place-items:center;box-shadow:0 8px 24px rgba(74,120,80,.38);margin-top:-12px}
+  .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 2px max(8px,env(safe-area-inset-bottom));z-index:50;align-items:center}
+  .mbn{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--muted);font-size:11px;font-weight:700;padding:6px 2px;min-height:50px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-tap-highlight-color:transparent}
+  .mbn .ni{font-size:23px;line-height:1}.mbn.active{color:var(--sage)}
+  .mob-fab{flex:0 0 auto;width:56px;height:56px;border-radius:50%;background:var(--sage);color:#fff;border:none;font-size:30px;display:grid;place-items:center;box-shadow:0 8px 24px rgba(74,120,80,.38);margin:-16px 4px 0}
   .answered-hero{flex-direction:column;align-items:flex-start}
+}
+@media(max-width:380px){
+  .mbn{font-size:10px;padding:6px 0}.mbn .ni{font-size:21px}
+  .mob-fab{width:50px;height:50px;font-size:26px}
 }
 @media(max-width:560px){
   .stats-row{grid-template-columns:1fr 1fr}.field-row{grid-template-columns:1fr}
   .topbar{flex-direction:column}.filters{flex-direction:column;align-items:stretch}
-  #auth-screen{flex-direction:column}.auth-left{padding:28px 20px}.auth-right{width:100%;padding:28px 20px}
+  #auth-screen{flex-direction:column}.auth-left{padding:28px 20px;position:relative}.auth-right{width:100%;padding:28px 20px}
+  .hero-auth-links{display:flex;align-items:center;gap:7px;position:absolute;top:30px;right:20px;z-index:5}
+  .hero-auth-links a{color:#fff;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;-webkit-tap-highlight-color:transparent}
+  .hero-auth-links a.up{color:#f0d070}
+  .hero-auth-links .sep{color:rgba(255,255,255,.5);font-weight:700;font-size:15px}
   .agrid{grid-template-columns:1fr}.pgrid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
@@ -629,6 +642,11 @@ button{cursor:pointer}
 <!-- ═══ AUTH SCREEN ═══ -->
 <div id="auth-screen">
   <div class="auth-left">
+    <nav class="hero-auth-links">
+      <a data-auth-jump="login">Sign In</a>
+      <span class="sep">/</span>
+      <a class="up" data-auth-jump="signup">Sign Up</a>
+    </nav>
     <div class="auth-logo">
       <div class="auth-logo-icon"><svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="16" y="3" width="4" height="20" rx="2" fill="#f0d070"/><rect x="8" y="11" width="20" height="4" rx="2" fill="#f0d070"/><path d="M18 33c0 0-8-5.5-8-10.5C10 19 12.5 17.5 15 19c1 .5 1.5 1 3 2.5 1.5-1.5 2-2 3-2.5 2.5-1.5 5 0 5 3.5C26 27.5 18 33 18 33z" fill="#f0d070"/></svg></div>
       <div class="auth-logo-name">Prayer<br>Memory Vault</div>
@@ -693,6 +711,7 @@ button{cursor:pointer}
       <button class="nbtn active" data-page="today"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L10 3l7 7"/><path d="M5 8.5V17h4v-4h2v4h4V8.5"/></svg></span>Today <span class="badge" id="nav-badge" style="display:none">0</span></button>
       <button class="nbtn" data-page="vault"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 0 1 6 0v3"/></svg></span>Prayer Vault</button>
       <button class="nbtn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Prayer Map</button>
+      <button class="nbtn" data-page="companion"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H8l-4 3z"/><path d="M10 6.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg></span>AI Companion <span class="tag t-share" style="font-size:9px;padding:1px 6px;margin-left:4px">AI</span></button>
       <div class="s-section">Record</div>
       <button class="nbtn" data-page="answered"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="m7 10 2 2 4-4"/></svg></span>Answered</button>
       <button class="nbtn" data-page="review"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17.5A2 2 0 0 1 6 16h12"/><path d="M4 2.5A2 2 0 0 0 6 4h12v16H6a2 2 0 0 1-2-2z"/></svg></span>Monthly Review</button>
@@ -804,6 +823,55 @@ button{cursor:pointer}
           <button class="btn btn-primary" data-open-add>+ Add Prayer</button>
         </div>
         <div class="pgrid" id="people-grid"></div>
+      </div>
+
+      <!-- AI PRAYER COMPANION -->
+      <div class="page" id="page-companion">
+        <div class="topbar">
+          <div><h1>AI Prayer Companion</h1><p>It remembers your prayers, suggests Scripture, and helps you give thanks.</p></div>
+          <button class="btn btn-ghost btn-sm" id="comp-clear">Clear conversation</button>
+        </div>
+        <div class="hth-layout">
+          <div class="chat-wrap">
+            <div class="chat-header">
+              <div class="ch-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px"><path d="M4 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4z"/></svg></div>
+              <div>
+                <div class="ch-name">Prayer Companion</div>
+                <div class="ch-sub">Remembers your prayers · Scripture · Testimony</div>
+              </div>
+            </div>
+            <div class="chat-msgs" id="comp-msgs">
+              <div class="typing-indicator" id="comp-typing">
+                <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+              </div>
+            </div>
+            <div class="chat-input-wrap">
+              <div class="chat-input-row">
+                <textarea class="chat-textarea" id="comp-input" placeholder="Ask about your prayers, or share what's on your heart…" rows="1"></textarea>
+                <button class="chat-send" id="comp-send"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px"><path d="M3 12l18-8-8 18-2-8z"/></svg></button>
+              </div>
+              <div class="chat-hint">Your Companion sees your saved prayers so it can pray with you specifically. It is a companion, not a substitute for a pastor or professional help.</div>
+            </div>
+          </div>
+          <div class="hth-side">
+            <div class="hth-info">
+              <h3>What it can do</h3>
+              <p>It knows the people and requests in your Vault. Ask it to reflect on a struggle, find a verse, or notice what God has been doing.</p>
+              <div class="disc">Conversations are private to your account. Scripture references are AI-suggested — keep your Bible close.</div>
+            </div>
+            <div class="starter-prompts">
+              <h3>Try asking</h3>
+              <button class="sp-btn comp-sp" data-prompt="Look at my prayers and tell me what you notice I keep carrying.">What do you notice in my prayers?</button>
+              <button class="sp-btn comp-sp" data-prompt="Give me a verse to pray over the people I'm worried about right now.">A verse for who I'm worried about</button>
+              <button class="sp-btn comp-sp" data-prompt="Help me pray for the prayer requests that have been waiting the longest.">Pray over my longest-waiting requests</button>
+              <button class="sp-btn comp-sp" data-prompt="Remind me of the prayers God has already answered for me.">What has God already answered?</button>
+            </div>
+            <div class="hth-info" id="comp-testimonies-wrap" style="display:none">
+              <h3>Your testimonies</h3>
+              <div id="comp-testimonies"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ANSWERED -->
@@ -950,13 +1018,16 @@ button{cursor:pointer}
           </div>
         </div>
 
-        <div class="review-save-row" style="margin-top:14px">
-          <div class="past-reviews">
-            <span style="font-size:13px;color:var(--muted);font-weight:700">Past reviews:</span>
-            <select id="rv-history"><option value="">Select a month to load</option></select>
-          </div>
+        <div class="review-save-row" style="margin-top:14px;justify-content:flex-end">
           <button class="btn btn-ghost" id="rv-clear">Clear</button>
           <button class="btn btn-primary" id="save-review-2">Save Review</button>
+        </div>
+
+        <!-- SAVED REVIEW ARCHIVE -->
+        <div id="review-archive-wrap" style="margin-top:30px">
+          <h2 style="font-size:18px;font-weight:800;margin:0 0 4px">Your Review Archive</h2>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 16px">Saved monthly reviews. Open one to keep editing, or save it as a PDF.</p>
+          <div class="wall-grid" id="review-archive-grid"></div>
         </div>
       </div>
 
@@ -1098,6 +1169,7 @@ button{cursor:pointer}
               <div class="ps"><div class="n" id="ps-total">0</div><div class="l">Total Prayers</div></div>
             </div>
             <div class="join-date" id="prof-joined">Member since —</div>
+            <button id="prof-logout" onclick="document.getElementById('do-logout').click()" style="margin-top:16px;width:100%;padding:11px 14px;border-radius:10px;border:1px solid #e6c9cb;background:#fff;color:#b4232a;font-weight:700;font-size:14px;cursor:pointer">⏻&nbsp; Sign Out</button>
           </div>
           <!-- RIGHT SECTIONS -->
           <div class="profile-sections">
@@ -1272,7 +1344,7 @@ button{cursor:pointer}
   <!-- MOBILE NAV -->
   <nav class="mob-nav">
     <button class="mbn active" data-page="today"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 10L10 3l7 7"/><path d="M5 8.5V17h4v-4h2v4h4V8.5"/></svg></span>Today</button>
-    <button class="mbn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Prayer Map</button>
+    <button class="mbn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Map</button>
     <button class="mob-fab" data-open-add>+</button>
     <button class="mbn" data-page="answered"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="10" r="8"/><path d="m7 10 2 2 4-4"/></svg></span>Answered</button>
     <button class="mbn" data-page="profile"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Profile</button>
@@ -1425,6 +1497,19 @@ button{cursor:pointer}
   </div>
 </div>
 
+<!-- Reusable styled prompt / confirm / alert (replaces native browser dialogs) -->
+<div class="backdrop" id="ask-bd">
+  <div class="modal" style="width:min(440px,calc(100vw - 32px))">
+    <h2 id="ask-title"></h2>
+    <p class="msub" id="ask-msg" style="margin-bottom:16px"></p>
+    <div class="field" id="ask-field" style="margin-bottom:0"><input id="ask-input"/></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="ask-cancel">Cancel</button>
+      <button class="btn btn-primary" id="ask-ok">OK</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1485,6 +1570,9 @@ function icon(name,size=14){
 // localStorage (offline demo). The synchronous render layer is untouched —
 // it always reads through the get*/save* helpers below.
 const UK='pmv_users',SK='pmv_session';
+// One-time cleanup: wipe the old seeded demo Prayer Wall posts that were cached
+// before launch, so existing browsers also start with an empty wall.
+try{if(!localStorage.getItem('pmv_wall_seed_cleared')){Object.keys(localStorage).filter(k=>k.startsWith('pmv_wall_')).forEach(k=>localStorage.removeItem(k));localStorage.setItem('pmv_wall_seed_cleared','1');}}catch(e){}
 const get=k=>{try{return JSON.parse(localStorage.getItem(k))||null}catch{return null}};
 const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const getUsers=()=>get(UK)||[];
@@ -1499,7 +1587,7 @@ const uid4=()=>(self.crypto&&crypto.randomUUID)?crypto.randomUUID():('x'+Date.no
 const useSupa=()=>!!supa;   // `supa` is created in the config block below
 
 // In-memory mirror of the signed-in user's cloud data.
-const cache={prayers:[],review:{},prefs:null,streak:null,groups:[],wall:[],confessions:[],causes:[]};
+const cache={prayers:[],review:{},prefs:null,streak:null,groups:[],wall:[],confessions:[],causes:[],aiMessages:[],testimonies:[]};
 const synced={prayers:[],confessions:[]};   // last-synced ids, for delete diffing
 function syncErr(e){console.error('[sync]',e);if(e&&e.message)toast('Cloud sync issue: '+e.message);}
 
@@ -1542,7 +1630,7 @@ async function loadAllData(uid){
     ]);
     cache.prayers=(pr.data||[]).map(MAP.prayers.from).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     synced.prayers=cache.prayers.map(x=>String(x.id));
-    const rev={};(rv.data||[]).forEach(r=>{rev[r.month]={grew:r.grew||'',drifted:r.drifted||'',carry:r.carry||'',godseen:r.godseen||'',consistency:r.consistency||'',intention:r.intention||'',rating:r.rating||0};});
+    const rev={};(rv.data||[]).forEach(r=>{rev[r.month]=parseMonthRow(r);});
     cache.review=rev;
     cache.prefs=pf.data?{remind:pf.data.remind!==false,digest:!!pf.data.digest,prompts:pf.data.prompts!==false,colorIdx:pf.data.color_idx||0}:{remind:true,digest:false,prompts:true,colorIdx:0};
     cache.streak=sk.data?{current:sk.data.current||0,best:sk.data.longest||0,history:sk.data.days||[]}:{current:0,best:0,history:[]};
@@ -1560,6 +1648,12 @@ async function loadAllData(uid){
     cache.groups=groups;
     const {data:wp}=await supa.from('wall_posts').select('*').is('group_id',null).order('created_at',{ascending:false}).limit(50);
     cache.wall=(wp||[]).map(r=>({id:r.id,author_id:r.author_id,person:r.author_name||r.name||'Someone',request:r.text,prayers:r.pray_count||0,ts:r.created_at?new Date(r.created_at).getTime():Date.now()}));
+    const [am,tm]=await Promise.all([
+      supa.from('ai_messages').select('role,content,created_at').eq('user_id',uid).order('created_at',{ascending:true}).limit(200),
+      supa.from('testimonies').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
+    ]);
+    cache.aiMessages=(am.data||[]).map(r=>({role:r.role,text:r.content,ts:r.created_at?new Date(r.created_at).getTime():Date.now()}));
+    cache.testimonies=(tm.data||[]).map(r=>({id:r.id,prayerId:r.prayer_id,title:r.title||'Answered Prayer',body:r.body,verse:r.verse||'',shared:!!r.shared,ts:r.created_at?new Date(r.created_at).getTime():Date.now()}));
   }catch(e){syncErr(e);}
 }
 
@@ -1570,7 +1664,7 @@ async function saveReview(uid,r){
   if(!useSupa()){set(rk(uid),r);return;}
   cache.review=r;
   try{
-    const rows=Object.entries(r).map(([month,d])=>({user_id:uid,month,grew:d.grew||null,drifted:d.drifted||null,carry:d.carry||null,godseen:d.godseen||null,consistency:d.consistency||null,intention:d.intention||null,rating:d.rating||0}));
+    const rows=Object.entries(r).map(([month,d])=>{const es=monthEntries(d);const last=es[es.length-1]||{};return {user_id:uid,month,grew:JSON.stringify(es),drifted:null,carry:null,godseen:null,consistency:null,intention:null,rating:last.rating||0};});
     if(rows.length){const {error}=await supa.from('reviews').upsert(rows);if(error)throw error;}
   }catch(e){syncErr(e);}
 }
@@ -1652,6 +1746,12 @@ document.querySelectorAll('.atab').forEach(b=>b.addEventListener('click',()=>{
 }));
 document.getElementById('go-signup').addEventListener('click',()=>document.querySelector('[data-auth="signup"]').click());
 document.getElementById('go-login').addEventListener('click',()=>document.querySelector('[data-auth="login"]').click());
+document.querySelectorAll('[data-auth-jump]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelector(`[data-auth="${b.dataset.authJump}"]`)?.click();
+    document.querySelector('.auth-right')?.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
 function showAuthErr(msg){const e=document.getElementById('auth-err');e.textContent=msg;e.style.display='block'}
 
 /* ── Supabase backend config — paste your keys here (see prayer-vault/SETUP.md) ── */
@@ -1666,9 +1766,13 @@ let supa = (SUPA_READY && window.supabase) ? window.supabase.createClient(SUPABA
 // server BEFORE the user clicks Upgrade/Donate, so checkout feels instant
 // instead of frozen. Throttled so navigation doesn't spam it.
 let _warmedAt=0;
-function warmBackend(){
+function warmBackend(intent){
   if(!API_BASE)return;
-  if(Date.now()-_warmedAt<60000)return;   // at most once a minute
+  // Passive navigation pings at most once a minute; a real intent signal
+  // (hovering or clicking Donate/Upgrade) may re-wake the server much sooner
+  // so a cold-start never lands on the actual checkout call.
+  const gap = intent ? 8000 : 60000;
+  if(Date.now()-_warmedAt<gap)return;
   _warmedAt=Date.now();
   try{ fetch(API_BASE+'/api/health',{cache:'no-store'}).catch(()=>{}); }catch(e){}
 }
@@ -1680,6 +1784,47 @@ function btnLoading(btn,label){
   btn.disabled=true; btn.textContent=label||'Working…';
   return ()=>{ btn.disabled=wasDisabled; btn.textContent=orig; };
 }
+
+// Branded replacements for the browser's native prompt()/confirm()/alert(),
+// which can't be styled and look like system error popups. One backdrop,
+// promise-based so callers can `await` them just like the natives.
+function appDialog(opts){
+  return new Promise(resolve=>{
+    const bd=document.getElementById('ask-bd');
+    const inputEl=document.getElementById('ask-input');
+    const fieldEl=document.getElementById('ask-field');
+    const msgEl=document.getElementById('ask-msg');
+    const okBtn=document.getElementById('ask-ok');
+    const cancelBtn=document.getElementById('ask-cancel');
+    document.getElementById('ask-title').textContent=opts.title||'';
+    msgEl.textContent=opts.message||'';
+    msgEl.style.display=opts.message?'block':'none';
+    const useInput=!!opts.input;
+    fieldEl.style.display=useInput?'block':'none';
+    if(useInput){ inputEl.value=opts.value!=null?opts.value:''; inputEl.placeholder=opts.placeholder||''; inputEl.type=opts.inputType||'text'; }
+    okBtn.textContent=opts.okText||'OK';
+    cancelBtn.textContent=opts.cancelText||'Cancel';
+    cancelBtn.style.display=opts.hideCancel?'none':'inline-flex';
+    okBtn.className='btn '+(opts.danger?'btn-danger':'btn-primary');
+    let done=false;
+    function finish(val){ if(done)return; done=true; bd.classList.remove('open'); cleanup(); resolve(val); }
+    function onOk(){ finish(useInput?inputEl.value:true); }
+    function onCancel(){ finish(useInput?null:false); }
+    function onBackdrop(e){ if(e.target===bd) onCancel(); }
+    function onKey(e){ if(e.key==='Enter'&&useInput){ e.preventDefault(); onOk(); } else if(e.key==='Escape'){ onCancel(); } }
+    function cleanup(){ okBtn.removeEventListener('click',onOk); cancelBtn.removeEventListener('click',onCancel); bd.removeEventListener('click',onBackdrop); document.removeEventListener('keydown',onKey); }
+    okBtn.addEventListener('click',onOk);
+    cancelBtn.addEventListener('click',onCancel);
+    bd.addEventListener('click',onBackdrop);
+    document.addEventListener('keydown',onKey);
+    bd.classList.add('open');
+    setTimeout(()=>{ if(useInput){ inputEl.focus(); inputEl.select(); } else { okBtn.focus(); } },30);
+  });
+}
+// prompt -> string|null ; confirm -> bool ; alert -> void
+const appPrompt=(message,value,opts={})=>appDialog({title:opts.title||'Enter a value',message,input:true,value,placeholder:opts.placeholder||'',inputType:opts.inputType,okText:opts.okText});
+const appConfirm=(message,opts={})=>appDialog({title:opts.title||'Are you sure?',message,okText:opts.okText||'Confirm',cancelText:opts.cancelText,danger:opts.danger!==false});
+const appAlert=(message,opts={})=>appDialog({title:opts.title||'Notice',message,hideCancel:true,okText:'OK'});
 
 // Build the app's user object from a Supabase auth user + their profile row.
 async function onAuthed(sbUser){
@@ -1797,7 +1942,7 @@ async function launchApp(user){
   document.getElementById('rv-drifted').value=rv.drifted||'';
   document.getElementById('rv-carry').value=rv.carry||'';
   populateProfileForm();setupProfileExtras();
-  populateMonthPicker();populateReviewHistory();
+  populateMonthPicker();renderReviewArchive();
   const curKey=new Date().getFullYear()+'-'+(new Date().getMonth()+1);
   loadReviewForMonth(curKey);
   renderAll();renderReminders();renderChat();renderWall();
@@ -1853,6 +1998,7 @@ function showPage(name){
   if(name==='groups'){renderWall();renderGroups();}
   if(name==='profile'){populateProfileForm();setupProfileExtras();}
   if(name==='heart'){renderChat();setTimeout(()=>{const m=document.getElementById('chat-msgs');m.scrollTop=m.scrollHeight;},50);}
+  if(name==='companion'){renderCompanion();renderTestimonies();setTimeout(()=>{const m=document.getElementById('comp-msgs');if(m)m.scrollTop=m.scrollHeight;},50);}
   if(name==='confession')renderConfession();
   if(name==='donate'){ warmBackend(); renderDonate(); }
   if(name==='pricing'){ warmBackend(); renderBilling(); }
@@ -1861,6 +2007,7 @@ document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',(
 
 // ═══ MOBILE "MORE" SHEET ═══
 const MOB_MORE_PAGES=[
+  {page:'companion',label:'AI Companion'},
   {page:'vault',label:'Prayer Vault'},
   {page:'groups',label:'Groups'},
   {page:'confession',label:'Confession'},
@@ -1872,12 +2019,17 @@ const MOB_MORE_PAGES=[
 function renderMobMore(){
   const list=document.getElementById('mob-more-list');
   if(!list)return;
-  list.innerHTML=MOB_MORE_PAGES.map(p=>`<button class="btn btn-ghost" style="width:100%;justify-content:flex-start" data-mob-page="${p.page}">${escape(p.label)}</button>`).join('');
+  list.innerHTML=MOB_MORE_PAGES.map(p=>`<button class="btn btn-ghost" style="width:100%;justify-content:flex-start" data-mob-page="${p.page}">${escape(p.label)}</button>`).join('')
+    +`<button id="mob-logout" style="width:100%;margin-top:8px;padding:12px 14px;border-radius:10px;border:1px solid #e6c9cb;background:#fff;color:#b4232a;font-weight:700;font-size:14px;cursor:pointer;text-align:center">⏻&nbsp; Sign Out</button>`;
   list.querySelectorAll('[data-mob-page]').forEach(b=>{
     b.addEventListener('click',()=>{
       document.getElementById('mob-more-backdrop').classList.remove('open');
       showPage(b.dataset.mobPage);
     });
+  });
+  list.querySelector('#mob-logout')?.addEventListener('click',()=>{
+    document.getElementById('mob-more-backdrop').classList.remove('open');
+    document.getElementById('do-logout').click();
   });
 }
 document.getElementById('mob-more-btn')?.addEventListener('click',()=>{
@@ -1943,6 +2095,7 @@ function cardHTML(p,actions=true){
     ${actions?`<div class="card-actions">
       <div class="card-date">${p.followUp?fmtDate(p.followUp):''}</div>
       ${!p.answered?`<button class="btn btn-sm btn-success mark-ans" data-id="${p.id}">Mark Answered</button>`:''}
+      <button class="btn btn-sm btn-ghost verse-p" data-id="${p.id}" title="Suggest a Scripture">✦ Verse</button>
       <button class="btn btn-sm btn-ghost edit-p" data-id="${p.id}">Edit</button>
       <button class="btn btn-sm btn-danger del-p" data-id="${p.id}">Delete</button>
     </div>`:''}
@@ -1952,6 +2105,7 @@ function cardHTML(p,actions=true){
 function attach(root){
   root.querySelectorAll('.mark-ans').forEach(b=>b.addEventListener('click',()=>openAnswered(b.dataset.id)));
   root.querySelectorAll('.edit-p').forEach(b=>b.addEventListener('click',()=>openEdit(b.dataset.id)));
+  root.querySelectorAll('.verse-p').forEach(b=>b.addEventListener('click',()=>suggestVerse(b.dataset.id,b)));
   root.querySelectorAll('.del-p').forEach(b=>b.addEventListener('click',()=>delPrayer(b.dataset.id)));
   attachTimelineClicks(root);
 }
@@ -1992,6 +2146,9 @@ function recordLift(name){
 }
 const TYPE_META={Person:{icon:'🙏',c:'#4a7850'},Job:{icon:'💼',c:'#b0720c'},Event:{icon:'📅',c:'#2f6b8a'},Other:{icon:'✨',c:'#7a5ea8'}};
 function typeMeta(t){ return TYPE_META[t]||TYPE_META.Person; }
+// Orb colour by prayer category (Health green, Finances blue, Family gold, …)
+const CATEGORY_META={Health:{c:'#4a7850'},Finances:{c:'#2f6b8a'},Family:{c:'#c2880c'},Work:{c:'#2f8a7b'},Faith:{c:'#7a5ea8'},Relationships:{c:'#b5546a'},Other:{c:'#6b7785'}};
+function catMeta(cat){ return CATEGORY_META[cat]||CATEGORY_META.Other; }
 function lastLiftedLine(last){
   if(!last)return'Not yet prayed';
   const d=Math.floor((Date.now()-last)/86400000);
@@ -2027,7 +2184,7 @@ function constellationHTML(items){
     else{const ring=Math.ceil(idx/6),inRing=(idx-1)%6,ang=(inRing/6)*Math.PI*2+ring*0.7,rad=20+ring*15;
       x=50+Math.cos(ang)*rad; y=50+Math.sin(ang)*rad*0.8;}
     const d=44+Math.round((s.count/maxC)*48), m=typeMeta(s.type), delay=((idx%6)*0.5).toFixed(1);
-    return`<button class="orb" data-orb="${s.uid}" title="${escape(s.name)} · prayed ${s.count}×" style="left:${x}%;top:${y}%;width:${d}px;height:${d}px;background:${m.c};animation-delay:${delay}s">
+    return`<button class="orb" data-orb="${s.uid}" title="${escape(s.name)} · prayed ${s.count}×" style="left:${x}%;top:${y}%;width:${d}px;height:${d}px;background:${catMeta(s.category).c};animation-delay:${delay}s">
       <span class="orb-ico">${m.icon}</span><span class="orb-lbl">${escape((s.name.split(' ')[0]||s.name).slice(0,10))}</span></button>`;
   }).join('');
 }
@@ -2046,7 +2203,7 @@ function subjectCard(s,kind){
   const meta=`${s.active} active · ${s.answered} answered · ${lastLiftedLine(s.last)}`;
   return`<div class="prow ${kind}" id="subj-${s.uid}">
     <div class="prow-head" data-toggle="${s.uid}">
-      <div class="orb-mini" style="background:${m.c}">${m.icon}</div>
+      <div class="orb-mini" style="background:${catMeta(s.category).c}">${m.icon}</div>
       <div class="prow-main">
         <div class="prow-name">${escape(s.name)} <span class="type-chip">${escape(s.type)}</span></div>
         <div class="prow-meta">${meta}</div>
@@ -2067,16 +2224,17 @@ function renderPeople(){
   const now=Date.now(), map={};
   prayers.forEach(p=>{
     const k=p.person||'Someone';
-    if(!map[k])map[k]={name:k,type:p.type||'Person',active:0,answered:0,first:p.createdAt||now,items:[]};
+    if(!map[k])map[k]={name:k,type:p.type||'Person',active:0,answered:0,first:p.createdAt||now,items:[],cats:{}};
     const m=map[k]; m.items.push(p);
     if(p.answered)m.answered++; else m.active++;
     if(p.type)m.type=p.type;
+    if(p.category)m.cats[p.category]=(m.cats[p.category]||0)+1;
     if((p.createdAt||now)<m.first)m.first=p.createdAt||now;
   });
   const list=Object.values(map);
   if(!list.length){grid.innerHTML=`<div class="empty"><div class="big">${icon('person',28)}</div><h3>Nothing on your map yet</h3><p>Add a prayer — a person, a job, an event, anything — and it appears here.</p></div>`;return}
   const lifts=getLifts(currentUser.id);
-  list.forEach((s,idx)=>{const lf=lifts[s.name]||{count:0,last:0,days:{}};s.uid=idx;s.count=lf.count||0;s.last=lf.last||0;s.days=lf.days||{};s.daysSince=s.last?Math.floor((now-s.last)/86400000):null;});
+  list.forEach((s,idx)=>{const lf=lifts[s.name]||{count:0,last:0,days:{}};s.uid=idx;s.count=lf.count||0;s.last=lf.last||0;s.days=lf.days||{};s.daysSince=s.last?Math.floor((now-s.last)/86400000):null;s.category=Object.entries(s.cats||{}).sort((a,b)=>b[1]-a[1])[0]?.[0]||'Other';});
   const active=list.filter(s=>s.active>0);
   const weekAgo=now-7*86400000;
   const prayedThisWeek=Object.values(lifts).filter(l=>l.last>=weekAgo).length;
@@ -2101,7 +2259,7 @@ function renderPeople(){
       <div class="pc-stat"><div class="n">${prayedThisWeek}</div><div class="l">Prayed / 7d</div></div>
     </div>
     <div class="pc-spot">
-      <div class="orb-mini" style="background:${sm.c}">${sm.icon}</div>
+      <div class="orb-mini" style="background:${catMeta(spot.category).c}">${sm.icon}</div>
       <div class="pc-spot-txt"><div class="k">${spot.active===0?'🕊 Answered':'🙏 Needs prayer'}</div><div class="v">${spotMsg}</div></div>
       ${spot.active===0?'':`<button class="btn btn-primary btn-sm" data-pray="${escape(spot.name)}">Pray now</button>`}
     </div>
@@ -2109,10 +2267,11 @@ function renderPeople(){
   if(annivs.length){
     html+=`<div class="pc-sec">🕊 Milestones</div><div class="anniv-strip">`+annivs.slice(0,10).map(s=>{
       const m=typeMeta(s.type);
-      return`<div class="anniv-chip" data-pray="${escape(s.name)}"><div class="ac-ico" style="background:${m.c}">${m.icon}</div><div class="ac-tx"><div class="ac-name">${escape(s.name)}</div><div class="ac-dur">${humanDur(now-s.first)} of prayer</div></div></div>`;
+      return`<div class="anniv-chip" data-pray="${escape(s.name)}"><div class="ac-ico" style="background:${catMeta(s.category).c}">${m.icon}</div><div class="ac-tx"><div class="ac-name">${escape(s.name)}</div><div class="ac-dur">${humanDur(now-s.first)} of prayer</div></div></div>`;
     }).join('')+`</div>`;
   }
-  html+=`<div class="pc-sec">🌌 Prayer constellation</div><div class="constellation">${constellationHTML(byCount)}</div><p class="const-hint">Bigger orb = prayed for more often · tap to open</p>`;
+  const catLegend=Object.entries(CATEGORY_META).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#5a6e80"><span style="width:10px;height:10px;border-radius:50%;background:${v.c};display:inline-block"></span>${k}</span>`).join('');
+  html+=`<div class="pc-sec">🌌 Prayer constellation</div><div class="constellation">${constellationHTML(byCount)}</div><p class="const-hint">Bigger orb = prayed for more often · colour = category · tap to open</p><div style="display:flex;flex-wrap:wrap;gap:14px;margin:8px 2px 4px">${catLegend}</div>`;
   const section=(title,arr,kind)=>arr.length?`<div class="pc-sec">${title}</div>`+arr.map(s=>subjectCard(s,kind)).join(''):'';
   html+=section(`🕊 Needs your prayer · ${needs.length}`,needs,'urgent');
   html+=section(`🔥 Faithfully carrying · ${faithful.length}`,faithful,'faithful');
@@ -2135,8 +2294,10 @@ function renderAnswered(){
       <div class="req">${escape(p.request)}</div>
       ${p.answeredNote?`<div class="nl">What happened</div><div class="note">"${escape(p.answeredNote)}"</div>`:'<div class="nl">Story</div><div class="note" style="color:var(--muted);font-style:normal;font-size:12px">No story written yet — edit this prayer to add one.</div>'}
       <div class="ad">${icon('calendar')} Answered ${p.answeredDate?fmtDate(p.answeredDate):'recently'}</div>
+      <button class="btn btn-sm btn-ghost write-testimony" data-id="${p.id}" style="margin-top:10px;width:100%">✦ Write testimony</button>
     </div>`;
   }).join('');
+  grid.querySelectorAll('.write-testimony').forEach(b=>b.addEventListener('click',()=>writeTestimony(b.dataset.id,b)));
 }
 
 function renderCheckOn(){
@@ -2242,8 +2403,8 @@ document.getElementById('modal-save').addEventListener('click',()=>{
   
 });
 
-function delPrayer(id){
-  if(!confirm('Delete this prayer permanently?'))return;
+async function delPrayer(id){
+  if(!await appConfirm('Delete this prayer permanently?',{title:'Delete prayer',okText:'Delete'}))return;
   prayers=prayers.filter(x=>x.id!=id);
   savePrayers(currentUser.id,prayers);
   renderAll();toast('Prayer deleted.');
@@ -2300,51 +2461,113 @@ function updateReviewStats(){
 }
 
 function loadReviewForMonth(key){
-  const all=getReview(currentUser.id);
-  const data=all[key]||{};
-  document.getElementById('rv-grew').value=data.grew||'';
-  document.getElementById('rv-drifted').value=data.drifted||'';
-  document.getElementById('rv-carry').value=data.carry||'';
-  document.getElementById('rv-godseen').value=data.godseen||'';
-  document.getElementById('rv-consistency').value=data.consistency||'';
-  document.getElementById('rv-intention').value=data.intention||'';
-  rvRating=data.rating||0;
-  document.querySelectorAll('#rating-consistency .rdot').forEach(d=>{
-    d.classList.toggle('active',Number(d.dataset.v)<=rvRating);
-  });
+  // Journal model: selecting a month starts a fresh entry; past dated entries
+  // for that month live in the archive (open the PDF to see the full doc).
+  clearReviewForm();
   updateReviewStats();
 }
 
-function saveCurrentReview(){
-  const key=document.getElementById('rv-month').value;
-  const all=getReview(currentUser.id)||{};
-  all[key]={
+function reviewDataFromForm(){
+  return {
     grew:document.getElementById('rv-grew').value,
     drifted:document.getElementById('rv-drifted').value,
     carry:document.getElementById('rv-carry').value,
     godseen:document.getElementById('rv-godseen').value,
     consistency:document.getElementById('rv-consistency').value,
     intention:document.getElementById('rv-intention').value,
-    rating:rvRating,
-    savedAt:Date.now()
+    rating:rvRating
   };
-  saveReview(currentUser.id,all);
-  // update history dropdown
-  populateReviewHistory();
-  toast('Monthly review saved.');
 }
 
-function populateReviewHistory(){
-  const sel=document.getElementById('rv-history');
+function clearReviewForm(){
+  ['rv-grew','rv-drifted','rv-carry','rv-godseen','rv-consistency','rv-intention'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  rvRating=0;document.querySelectorAll('#rating-consistency .rdot').forEach(d=>d.classList.remove('active'));
+}
+
+function reviewHasContent(d){
+  if(!d)return false;
+  return !!(String(d.grew||'').trim()||String(d.drifted||'').trim()||String(d.carry||'').trim()||String(d.godseen||'').trim()||String(d.consistency||'').trim()||String(d.intention||'').trim()||d.rating);
+}
+
+// A month record is {entries:[{date,...fields,rating}]}. Normalise any shape
+// (new entries array, legacy flat object) into an array of dated entries.
+function monthEntries(rec){
+  if(!rec)return [];
+  if(Array.isArray(rec.entries))return rec.entries;
+  return reviewHasContent(rec)?[{grew:rec.grew||'',drifted:rec.drifted||'',carry:rec.carry||'',godseen:rec.godseen||'',consistency:rec.consistency||'',intention:rec.intention||'',rating:rec.rating||0,date:rec.savedAt||Date.now()}]:[];
+}
+// Reads a Supabase review row: entries JSON lives in `grew`; older rows are flat.
+function parseMonthRow(r){
+  if(typeof r.grew==='string'){const t=r.grew.trim();if(t.startsWith('[')){try{const p=JSON.parse(t);if(Array.isArray(p))return {entries:p};}catch(e){}}}
+  const legacy={grew:r.grew||'',drifted:r.drifted||'',carry:r.carry||'',godseen:r.godseen||'',consistency:r.consistency||'',intention:r.intention||'',rating:r.rating||0};
+  return reviewHasContent(legacy)?{entries:[{...legacy,date:Date.now()}]}:{entries:[]};
+}
+
+function saveCurrentReview(){
+  const key=document.getElementById('rv-month').value;
+  const data=reviewDataFromForm();
+  if(!reviewHasContent(data)){toast('Write something before saving.');return;}
   const all=getReview(currentUser.id)||{};
-  sel.innerHTML='<option value="">Select a month to load</option>';
-  Object.keys(all).sort().reverse().forEach(key=>{
+  const entries=monthEntries(all[key]).slice();
+  entries.push({...data,date:Date.now()});
+  all[key]={entries};
+  // cap the archive at the 12 most recent months
+  Object.keys(all).sort(rvKeyCmp).slice(REVIEW_CAP).forEach(k=>delete all[k]);
+  saveReview(currentUser.id,all);
+  renderReviewArchive();
+  clearReviewForm();
+  updateReviewStats();
+  toast('Entry added to this month’s journal.');
+}
+
+const rvEsc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const REVIEW_CAP=12;
+// chronological, newest month first
+const rvKeyCmp=(a,b)=>{const[ay,am]=a.split('-').map(Number),[by,bm]=b.split('-').map(Number);return (by*12+bm)-(ay*12+am);};
+
+function renderReviewArchive(){
+  const grid=document.getElementById('review-archive-grid');
+  if(!grid)return;
+  const all=getReview(currentUser.id)||{};
+  const keys=Object.keys(all).filter(k=>monthEntries(all[k]).length).sort(rvKeyCmp).slice(0,REVIEW_CAP);
+  if(!keys.length){
+    grid.innerHTML=`<div class="gcard" style="grid-column:1/-1;text-align:center;padding:28px;color:var(--muted)"><h3 style="margin:0 0 4px">No saved reviews yet</h3><p style="font-size:13px;margin:0">Fill out the review above and click Save Review — it will appear here.</p></div>`;
+    return;
+  }
+  grid.innerHTML=keys.map(key=>{
+    const d=all[key];
     const[yr,mo]=key.split('-').map(Number);
     const label=new Date(yr,mo-1,1).toLocaleDateString('en',{month:'long',year:'numeric'});
-    const opt=document.createElement('option');
-    opt.value=key;opt.textContent=label;
-    sel.appendChild(opt);
-  });
+    const es=monthEntries(d).slice().sort((a,b)=>(a.date||0)-(b.date||0));
+    const last=es[es.length-1]||{};
+    const count=es.length+' '+(es.length===1?'entry':'entries');
+    const lastDate=last.date?'latest '+new Date(last.date).toLocaleDateString('en',{month:'short',day:'numeric'}):'';
+    const dots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${i<(last.rating||0)?'var(--sage)':'#dce3e8'};margin-right:3px"></span>`).join('');
+    const src=String(last.godseen||last.grew||last.intention||last.consistency||last.carry||last.drifted||'').trim();
+    const preview=src?rvEsc(src.slice(0,150))+(src.length>150?'…':''):'No notes written.';
+    return `<div class="wall-card">
+      <div class="wc-head" style="justify-content:space-between">
+        <div>
+          <div class="wc-name">${label}</div>
+          <div class="wc-time">${count}${lastDate?' · '+lastDate:''}</div>
+        </div>
+        <div style="white-space:nowrap">${dots}</div>
+      </div>
+      <div class="wc-req">${preview}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" data-rv-open="${key}">+ Add entry</button>
+        <button class="btn btn-primary btn-sm" data-rv-pdf="${key}">Save as PDF</button>
+      </div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('[data-rv-open]').forEach(b=>b.addEventListener('click',function(){
+    const key=this.dataset.rvOpen;
+    const picker=document.getElementById('rv-month');
+    if([...picker.options].some(o=>o.value===key))picker.value=key;
+    loadReviewForMonth(key);
+    document.getElementById('page-review').scrollIntoView({behavior:'smooth',block:'start'});
+  }));
+  grid.querySelectorAll('[data-rv-pdf]').forEach(b=>b.addEventListener('click',function(){exportReviewMonth(this.dataset.rvPdf);}));
 }
 
 document.querySelectorAll('#rating-consistency .rdot').forEach(d=>{
@@ -2357,23 +2580,30 @@ document.querySelectorAll('#rating-consistency .rdot').forEach(d=>{
 });
 
 document.getElementById('rv-month').addEventListener('change',()=>loadReviewForMonth(document.getElementById('rv-month').value));
-document.getElementById('rv-history').addEventListener('change',function(){
-  if(this.value){document.getElementById('rv-month').value=this.value;loadReviewForMonth(this.value);}
-});
 document.getElementById('save-review').addEventListener('click',saveCurrentReview);
 document.getElementById('save-review-2').addEventListener('click',saveCurrentReview);
-document.getElementById('rv-export-pdf').addEventListener('click',()=>{
-  const key=document.getElementById('rv-month').value;
+// Add a "+ Add entry" button inside each section card so users don't have to
+// scroll to the Save button. Each saves the whole dated entry.
+document.querySelectorAll('.review-layout .rcard').forEach(card=>{
+  const b=document.createElement('button');
+  b.className='btn btn-ghost btn-sm';
+  b.textContent='+ Add entry';
+  b.style.cssText='margin-top:10px;align-self:flex-start';
+  b.addEventListener('click',saveCurrentReview);
+  card.appendChild(b);
+});
+
+function buildReviewPdfHtml(d,key){
   const[yr,mo]=key.split('-').map(Number);
   const monthLabel=new Date(yr,mo-1,1).toLocaleDateString('en',{month:'long',year:'numeric'});
   const name=currentUser.first+' '+(currentUser.last||'');
-  const grew=document.getElementById('rv-grew').value||'—';
-  const drifted=document.getElementById('rv-drifted').value||'—';
-  const carry=document.getElementById('rv-carry').value||'—';
-  const godseen=document.getElementById('rv-godseen').value||'—';
-  const consistency=document.getElementById('rv-consistency').value||'—';
-  const intention=document.getElementById('rv-intention').value||'—';
-  const ratingDots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${i<rvRating?'#4a7850':'#dce3e8'};margin-right:4px"></span>`).join('');
+  const grew=(d.grew||'').trim()||'—';
+  const drifted=(d.drifted||'').trim()||'—';
+  const carry=(d.carry||'').trim()||'—';
+  const godseen=(d.godseen||'').trim()||'—';
+  const consistency=(d.consistency||'').trim()||'—';
+  const intention=(d.intention||'').trim()||'—';
+  const ratingDots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${i<(d.rating||0)?'#4a7850':'#dce3e8'};margin-right:4px"></span>`).join('');
 
   const html=`
   <div style="font-family:Georgia,serif;max-width:680px;margin:0 auto;color:#0e1e2e;padding:20px 0">
@@ -2447,16 +2677,60 @@ document.getElementById('rv-export-pdf').addEventListener('click',()=>{
     </div>
   </div>`;
 
+  return html;
+}
+
+function printReviewHtml(html){
   const pa=document.getElementById('print-area');
   pa.innerHTML=html;
+  document.body.appendChild(pa);          // make it a direct child of body so display:none on siblings works
+  document.body.classList.add('printing');
   pa.style.display='block';
-  setTimeout(()=>{ window.print(); pa.style.display='none'; },200);
+  setTimeout(()=>{ window.print(); pa.style.display='none'; document.body.classList.remove('printing'); },300);
+}
+
+// Build the full monthly journal document: every dated entry, stacked in order.
+function buildMonthPdfHtml(key){
+  const es=monthEntries((getReview(currentUser.id)||{})[key]).slice().sort((a,b)=>(a.date||0)-(b.date||0));
+  const[yr,mo]=key.split('-').map(Number);
+  const monthLabel=new Date(yr,mo-1,1).toLocaleDateString('en',{month:'long',year:'numeric'});
+  const name=currentUser.first+' '+(currentUser.last||'');
+  const sec=(label,val,bg,bd)=>{const v=String(val||'').trim();if(!v)return'';return `<div style="margin-bottom:13px"><div style="font-size:12px;font-weight:800;color:#5a6e80;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${label}</div><div style="font-size:14px;color:#0e1e2e;line-height:1.6;background:${bg};border:1px solid ${bd};border-radius:8px;padding:10px">${rvEsc(v).replace(/\n/g,'<br>')}</div></div>`;};
+  const entriesHtml=es.map(d=>{
+    const dlabel=d.date?new Date(d.date).toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric'}):'Undated';
+    const dots=Array.from({length:5},(_,i)=>`<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${i<(d.rating||0)?'#4a7850':'#dce3e8'};margin-right:3px"></span>`).join('');
+    return `<div style="margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid #e6ebe6">
+      <div style="font-size:15px;font-weight:800;color:#26502a;margin-bottom:8px">${dlabel}</div>
+      <div style="margin-bottom:12px">${dots}</div>
+      ${sec('Prayer Consistency',d.consistency,'#fafcfa','#dce3e8')}
+      ${sec('Where I Grew',d.grew,'#fafcfa','#dce3e8')}
+      ${sec('Where I Drifted',d.drifted,'#fafcfa','#dce3e8')}
+      ${sec('Where I Saw God Move',d.godseen,'#f3fbf3','#b8d4ba')}
+      ${sec('People to Carry Forward',d.carry,'#fafcfa','#dce3e8')}
+      ${sec('One Intention for Next Month',d.intention,'#fff6e0','#e8c060')}
+    </div>`;
+  }).join('');
+  return `<div style="font-family:Georgia,serif;max-width:680px;margin:0 auto;color:#0e1e2e;padding:20px 0">
+    <div style="border-bottom:2px solid #4a7850;padding-bottom:18px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-size:11px;font-weight:700;color:#4a7850;text-transform:uppercase;letter-spacing:.1em">Prayer Memory Vault</div><div style="font-size:22px;font-weight:800;color:#0c2237">Monthly Prayer Journal</div></div>
+      <div style="text-align:right"><div style="font-size:16px;font-weight:700;color:#0c2237">${monthLabel}</div><div style="font-size:13px;color:#5a6e80">${name} · ${es.length} ${es.length===1?'entry':'entries'}</div></div>
+    </div>
+    <div style="background:#f3f6f3;border-left:4px solid #4a7850;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:24px;font-style:italic;font-size:14px;color:#26502a;line-height:1.6">"Search me, God, and know my heart; test me and know my anxious thoughts."<span style="display:block;margin-top:6px;font-style:normal;font-size:12px;font-weight:700;color:#4a7850">— Psalm 139:23</span></div>
+    ${entriesHtml||'<p style="color:#5a6e80">No entries yet.</p>'}
+    <div style="border-top:1px solid #dce3e8;padding-top:14px;display:flex;justify-content:space-between;font-size:12px;color:#5a6e80"><div>Prayer Memory Vault — ${name}</div><div>Printed ${new Date().toLocaleDateString('en',{month:'long',day:'numeric',year:'numeric'})}</div></div>
+  </div>`;
+}
+
+function exportReviewMonth(key){
+  if(!monthEntries((getReview(currentUser.id)||{})[key]).length){toast('Nothing saved for that month yet.');return;}
+  printReviewHtml(buildMonthPdfHtml(key));
+}
+
+document.getElementById('rv-export-pdf').addEventListener('click',()=>{
+  exportReviewMonth(document.getElementById('rv-month').value);
 });
 
-document.getElementById('rv-clear').addEventListener('click',()=>{
-  ['rv-grew','rv-drifted','rv-carry','rv-godseen','rv-consistency','rv-intention'].forEach(id=>document.getElementById(id).value='');
-  rvRating=0;document.querySelectorAll('#rating-consistency .rdot').forEach(d=>d.classList.remove('active'));
-});
+document.getElementById('rv-clear').addEventListener('click',clearReviewForm);
 
 // ═══ PROFILE ═══
 function populateProfileForm(){
@@ -2538,8 +2812,8 @@ async function startUpgrade(plan,btn){
     const res=await fetch(API_BASE+'/api/subscribe/checkout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')},body:JSON.stringify({plan})});
     if(res.ok){ const j=await res.json(); if(j.url){ location.href=j.url; return; } }
     const txt=await res.text().catch(()=>'');
-    alert('Upgrade failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''));
-  }catch(e){ alert('Upgrade error: '+((e&&e.message)||e)); }
+    appAlert('Upgrade failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''),{title:'Checkout problem'});
+  }catch(e){ appAlert('Upgrade error: '+((e&&e.message)||e),{title:'Checkout problem'}); }
   finally{ done(); }
 }
 async function openBillingPortal(btn){
@@ -2551,8 +2825,8 @@ async function openBillingPortal(btn){
     const res=await fetch(API_BASE+'/api/billing/portal',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||'')}});
     if(res.ok){ const j=await res.json(); if(j.url){ location.href=j.url; return; } }
     const txt=await res.text().catch(()=>'');
-    alert('Manage Billing failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''));
-  }catch(e){ alert('Manage Billing error: '+((e&&e.message)||e)); }
+    appAlert('Manage Billing failed — HTTP '+res.status+(txt?('\n\n'+txt.slice(0,400)):''),{title:'Billing problem'});
+  }catch(e){ appAlert('Manage Billing error: '+((e&&e.message)||e),{title:'Billing problem'}); }
   finally{ done(); }
 }
 document.getElementById('plan-grid')?.addEventListener('click',e=>{
@@ -2671,8 +2945,8 @@ document.getElementById('export-text').addEventListener('click',()=>{
 });
 
 document.getElementById('delete-account').addEventListener('click',async ()=>{
-  if(!confirm('Are you absolutely sure? This will permanently delete your account and ALL your prayer data. This cannot be undone.'))return;
-  if(!confirm('Last chance — delete everything permanently?'))return;
+  if(!await appConfirm('This will permanently delete your account and ALL your prayer data. This cannot be undone.',{title:'Delete account?',okText:'Delete everything'}))return;
+  if(!await appConfirm('Last chance — delete everything permanently?',{title:'Are you absolutely sure?',okText:'Yes, delete it all'}))return;
   if(useSupa()){
     const uidDel=currentUser.id;
     try{
@@ -3104,7 +3378,7 @@ async function fetchGroupMembers(groupId){
 }
 async function removeMember(groupId,userId){
   if(userId===currentUser.id){ toast("You're the leader — delete the group instead of removing yourself."); return; }
-  if(!confirm('Remove this member from the group?'))return;
+  if(!await appConfirm('Remove this member from the group?',{title:'Remove member',okText:'Remove'}))return;
   if(useSupa()){
     try{ const r=await supa.from('group_members').delete().eq('group_id',groupId).eq('user_id',userId); if(r.error)throw r.error;
       const g=cache.groups.find(x=>x.id===groupId); if(g&&Array.isArray(g.members)&&g.members.length>1)g.members.pop();
@@ -3117,8 +3391,8 @@ async function removeMember(groupId,userId){
 }
 async function renameGroup(groupId){
   const g=getGroups(currentUser.id).find(x=>x.id===groupId); if(!g)return;
-  const name=prompt('Group name:',g.name); if(name===null)return;
-  const desc=prompt('Description:',g.desc||''); if(desc===null)return;
+  const name=await appPrompt('Group name',g.name,{title:'Rename Group',okText:'Save'}); if(name===null)return;
+  const desc=await appPrompt('Description',g.desc||'',{title:'Group Description',okText:'Save'}); if(desc===null)return;
   const newName=(name.trim()||g.name), newDesc=desc.trim();
   if(useSupa()){
     try{ const r=await supa.from('groups').update({ name:newName, description:newDesc }).eq('id',groupId); if(r.error)throw r.error; }catch(e){ syncErr(e); return; }
@@ -3128,7 +3402,7 @@ async function renameGroup(groupId){
   toast('Group updated.'); renderLeaderDashboard(); renderGroups();
 }
 async function deleteGroupAsOwner(groupId){
-  if(!confirm('Delete this group for everyone? This cannot be undone.'))return;
+  if(!await appConfirm('Delete this group for everyone? This cannot be undone.',{title:'Delete group',okText:'Delete'}))return;
   if(useSupa()){
     try{ const r=await supa.from('groups').delete().eq('id',groupId); if(r.error)throw r.error; cache.groups=cache.groups.filter(g=>g.id!==groupId); }catch(e){ syncErr(e); return; }
   }else{
@@ -3137,7 +3411,7 @@ async function deleteGroupAsOwner(groupId){
   toast('Group deleted.'); renderLeaderDashboard(); renderGroups();
 }
 async function postAnnouncement(groupId){
-  const text=prompt('Announcement to post to the group wall:'); if(text===null)return;
+  const text=await appPrompt('Announcement to post to the group wall','',{title:'Post Announcement',okText:'Post'}); if(text===null)return;
   if(!text.trim()){ toast('Write something first.'); return; }
   const body='📢 '+text.trim();
   if(useSupa()){
@@ -3222,14 +3496,6 @@ function renderWall(){
   const grid=document.getElementById('wall-grid');
   if(!grid)return;
   let wall=getWall(currentUser.id);
-  if(!wall.length && !useSupa()){
-    wall=[
-      {id:1,person:'Emma Wright',request:'Starting a new job next week — nervous and praying for confidence.',prayers:7,ts:Date.now()-2*3600000},
-      {id:2,person:'Ruth Mensah',request:'My father was diagnosed this week. Praying for peace and wisdom for the doctors.',prayers:14,ts:Date.now()-5*3600000},
-      {id:3,person:'Clara Lee',request:'Marriage has been hard lately. Asking for grace and restoration.',prayers:5,ts:Date.now()-86400000},
-    ];
-    saveWall(currentUser.id,wall);
-  }
   if(!wall.length){
     grid.innerHTML=`<div class="gcard" style="grid-column:1/-1;text-align:center;padding:28px;color:var(--muted)">${icon('group',24)}<h3 style="margin-top:8px">The wall is quiet</h3><p style="font-size:13px">Be the first to share a prayer request with the community.</p></div>`;
     return;
@@ -3341,7 +3607,7 @@ function renderConfession(){
   list.querySelectorAll('[data-cf-del]').forEach(b=>b.addEventListener('click',function(){ deleteConfession(this.dataset.cfDel); }));
 }
 async function deleteConfession(id){
-  if(!confirm('Delete this request? This cannot be undone.'))return;
+  if(!await appConfirm('Delete this request? This cannot be undone.',{title:'Delete request',okText:'Delete'}))return;
   saveConfessions(currentUser.id, getConfessions(currentUser.id).filter(x=>String(x.id)!==String(id)));   // syncDiff propagates the delete to Supabase
   renderConfession();
   toast('Request deleted.');
@@ -3412,8 +3678,14 @@ function renderDonate(){
     </div>`;
   }).join('');
   grid.querySelectorAll('[data-donate]').forEach(btn=>{
+    // Hovering Donate is a strong intent signal — start waking the billing
+    // server before the click so any cold-start is already underway.
+    btn.addEventListener('pointerenter',()=>warmBackend(true),{passive:true});
     btn.addEventListener('click',async function(){
-      const amt=prompt('Enter donation amount ($):','25');
+      // Fire one more wake now; the blocking prompt() below gives the
+      // cold-start 20-50s of cover while the user types an amount.
+      warmBackend(true);
+      const amt=await appPrompt('How much would you like to give? ($)','25',{title:'Make a Donation',inputType:'number',okText:'Continue'});
       if(amt===null)return;
       const n=parseFloat(amt);
       if(!n||n<=0){toast('Enter a valid amount.');return;}
@@ -3781,19 +4053,191 @@ document.getElementById('chat-input').addEventListener('keydown',e=>{
 document.getElementById('chat-input').addEventListener('input',function(){
   this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';
 });
-document.getElementById('clear-chat').addEventListener('click',()=>{
-  if(!confirm('Clear this conversation?'))return;
+document.getElementById('clear-chat').addEventListener('click',async ()=>{
+  if(!await appConfirm('Clear this conversation?',{title:'Clear chat',okText:'Clear'}))return;
   localStorage.removeItem(chatKey(currentUser.id));
   renderChat();
   toast('Conversation cleared.');
 });
-document.querySelectorAll('.sp-btn').forEach(b=>b.addEventListener('click',()=>{
+document.querySelectorAll('.sp-btn:not(.comp-sp)').forEach(b=>b.addEventListener('click',()=>{
   document.getElementById('chat-input').value=b.dataset.prompt;
   sendChat();
 }));
 
 // hook renderReminders into showPage
 const _origShowPage=showPage;
+
+// ═══ AI PRAYER COMPANION ═══
+// Talks to the Render server (/api/ai/*), which proxies Claude with our
+// secret key. The server reads the user's prayers + chat history for memory;
+// the browser only sends the message + the Supabase JWT.
+async function aiToken(){
+  if(!supa)return'';
+  try{ const { data:{ session } }=await supa.auth.getSession(); return (session&&session.access_token)||''; }
+  catch(e){ return ''; }
+}
+async function aiPost(path,body){
+  const token=await aiToken();
+  if(!API_BASE||!token)throw new Error('Sign in to use the Companion.');
+  const res=await fetch(API_BASE+path,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body||{})});
+  let data={};try{data=await res.json();}catch(e){}
+  if(!res.ok)throw new Error(data.error||('Request failed ('+res.status+')'));
+  return data;
+}
+// Assistant text is plain text from the model — escape it, keep line breaks.
+const nl2br=s=>escape(s).replace(/\n/g,'<br>');
+function compMsgHTML(m){
+  const timeStr=m.ts?new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'Now';
+  if(m.role==='user'){
+    const av=initials(currentUser.first+' '+(currentUser.last||''));
+    return`<div class="chat-msg user"><div class="msg-av">${escape(av)}</div><div><div class="msg-bubble">${escape(m.text)}</div><div class="msg-time">${timeStr}</div></div></div>`;
+  }
+  return`<div class="chat-msg"><div class="msg-av">${icon('cross',16)}</div><div><div class="msg-bubble">${nl2br(m.text)}</div><div class="msg-time">${timeStr}</div></div></div>`;
+}
+function renderCompanion(){
+  const el=document.getElementById('comp-msgs');if(!el)return;
+  const typing=document.getElementById('comp-typing');
+  const msgs=cache.aiMessages||[];
+  if(!msgs.length){
+    el.innerHTML=`<div class="chat-msg"><div class="msg-av">${icon('cross',16)}</div><div><div class="msg-bubble">Hello ${escape(currentUser.first)}. I'm your Prayer Companion — I can see the prayers in your Vault, so we can pray through them together. Ask me anything, or tap a prompt to begin.</div><div class="msg-time">Now</div></div></div>`;
+  }else{
+    el.innerHTML=msgs.map(compMsgHTML).join('');
+  }
+  if(typing)el.appendChild(typing);
+  el.scrollTop=el.scrollHeight;
+}
+let compSending=false;
+async function sendCompanion(){
+  if(compSending)return;
+  const input=document.getElementById('comp-input');
+  const text=(input.value||'').trim();
+  if(!text)return;
+  if(!supa){toast('Cloud sign-in is required for the Companion.');return;}
+  input.value='';input.style.height='';
+  cache.aiMessages=[...(cache.aiMessages||[]),{role:'user',text,ts:Date.now()}];
+  renderCompanion();
+  const typing=document.getElementById('comp-typing');if(typing)typing.classList.add('show');
+  const m=document.getElementById('comp-msgs');if(m)m.scrollTop=99999;
+  compSending=true;
+  try{
+    const { reply }=await aiPost('/api/ai/chat',{message:text});
+    cache.aiMessages=[...(cache.aiMessages||[]),{role:'assistant',text:reply||'…',ts:Date.now()}];
+  }catch(e){
+    cache.aiMessages=[...(cache.aiMessages||[]),{role:'assistant',text:'🕊️ '+(e.message||'The Companion is unavailable right now. Please try again.'),ts:Date.now()}];
+  }finally{
+    compSending=false;
+    if(typing)typing.classList.remove('show');
+    renderCompanion();
+  }
+}
+// Lightweight centered overlay for verse + testimony (matches app styling).
+function compOverlay(title,inner){
+  const bd=document.createElement('div');
+  bd.style.cssText='position:fixed;inset:0;background:rgba(8,20,16,.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
+  bd.innerHTML=`<div style="background:#fff;border-radius:var(--radius,14px);max-width:480px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #eef1ee">
+      <strong style="font-size:16px">${escape(title)}</strong>
+      <button class="ov-x" style="border:none;background:none;font-size:22px;line-height:1;cursor:pointer;color:#8a9a8e">×</button>
+    </div>
+    <div style="padding:18px">${inner}</div>
+  </div>`;
+  const close=()=>bd.remove();
+  bd.addEventListener('click',e=>{if(e.target===bd)close();});
+  bd.querySelector('.ov-x').addEventListener('click',close);
+  document.body.appendChild(bd);
+  return {bd,close};
+}
+async function suggestVerse(prayerId,btn){
+  if(!supa){toast('Cloud sign-in is required for AI verses.');return;}
+  const old=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='…';}
+  try{
+    const { verses }=await aiPost('/api/ai/verse',{prayerId});
+    if(!verses||!verses.length){toast('No verse came back — try again.');return;}
+    const inner=verses.map(v=>`<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f0f2f0">
+      <div style="font-style:italic;color:#1b3a2b;line-height:1.55">"${escape(v.text||'')}"</div>
+      <div style="font-weight:700;color:#2f7d52;margin-top:6px;font-size:13px">${escape(v.ref||'')}</div>
+      ${v.why?`<div style="color:#5a6e80;font-size:13px;margin-top:6px">${escape(v.why)}</div>`:''}
+    </div>`).join('');
+    compOverlay('A Verse for This Prayer',inner);
+  }catch(e){toast(e.message||'Could not fetch a verse.');}
+  finally{if(btn){btn.disabled=false;btn.textContent=old;}}
+}
+async function writeTestimony(prayerId,btn){
+  if(!supa){toast('Cloud sign-in is required for testimonies.');return;}
+  const old=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='Writing…';}
+  try{
+    const t=await aiPost('/api/ai/testimony',{prayerId});
+    const inner=`
+      <input id="ov-title" value="${escape(t.title||'Answered Prayer')}" style="width:100%;font-weight:700;font-size:15px;border:1px solid #e2e7e2;border-radius:8px;padding:8px 10px;margin-bottom:10px"/>
+      <textarea id="ov-body" rows="7" style="width:100%;border:1px solid #e2e7e2;border-radius:8px;padding:10px;line-height:1.55;font:inherit;resize:vertical">${escape(t.body||'')}</textarea>
+      ${t.verse?`<div style="font-size:13px;color:#2f7d52;margin-top:8px;font-weight:600">${escape(t.verse)}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button id="ov-save" class="btn btn-primary btn-sm">Save</button>
+        <button id="ov-share" class="btn btn-ghost btn-sm">Share</button>
+        <button id="ov-wall" class="btn btn-ghost btn-sm">Post to wall</button>
+      </div>`;
+    const { bd, close }=compOverlay('Your Testimony',inner);
+    const getVals=()=>({title:bd.querySelector('#ov-title').value.trim(),body:bd.querySelector('#ov-body').value.trim(),verse:t.verse||''});
+    bd.querySelector('#ov-save').addEventListener('click',async()=>{
+      const v=getVals();if(!v.body){toast('Write something first.');return;}
+      await saveTestimony(prayerId,v,false);close();toast('Testimony saved.');
+    });
+    bd.querySelector('#ov-share').addEventListener('click',async()=>{
+      const v=getVals();const txt=`${v.body}${v.verse?'\n\n— '+v.verse:''}`;
+      try{ if(navigator.share){await navigator.share({title:v.title,text:txt});} else {await navigator.clipboard.writeText(txt);toast('Testimony copied to clipboard.');} }
+      catch(e){/* user cancelled share */}
+    });
+    bd.querySelector('#ov-wall').addEventListener('click',async()=>{
+      const v=getVals();if(!v.body){toast('Write something first.');return;}
+      await postTestimonyToWall(v);await saveTestimony(prayerId,v,true);close();toast('Posted to the prayer wall.');
+    });
+  }catch(e){toast(e.message||'Could not write a testimony.');}
+  finally{if(btn){btn.disabled=false;btn.textContent=old;}}
+}
+async function saveTestimony(prayerId,v,shared){
+  const id=uid4();
+  cache.testimonies=[{id,prayerId,title:v.title,body:v.body,verse:v.verse,shared:!!shared,ts:Date.now()},...(cache.testimonies||[])];
+  renderTestimonies();
+  if(useSupa()){
+    try{ const r=await supa.from('testimonies').insert({id,user_id:currentUser.id,prayer_id:prayerId,title:v.title,body:v.body,verse:v.verse,shared:!!shared});if(r.error)throw r.error; }
+    catch(e){ cache.testimonies=(cache.testimonies||[]).filter(x=>x.id!==id);renderTestimonies();syncErr(e); }
+  }
+}
+async function postTestimonyToWall(v){
+  if(!useSupa())return;
+  const id=uid4();const person=(currentUser.first||'')+' '+(currentUser.last||'');
+  const msg=`${v.body}${v.verse?'\n\n— '+v.verse:''}`;
+  const wall=getWall(currentUser.id);
+  wall.unshift({id,author_id:currentUser.id,person,request:msg,prayers:0,ts:Date.now()});
+  saveWall(currentUser.id,wall);renderWall();
+  try{ const r=await supa.from('wall_posts').insert({id,group_id:null,author_id:currentUser.id,name:person,author_name:person,text:msg,pray_count:0});if(r.error)throw r.error; }
+  catch(e){ saveWall(currentUser.id,getWall(currentUser.id).filter(x=>x.id!==id));renderWall();syncErr(e); }
+}
+function renderTestimonies(){
+  const wrap=document.getElementById('comp-testimonies-wrap');
+  const el=document.getElementById('comp-testimonies');
+  if(!wrap||!el)return;
+  const list=cache.testimonies||[];
+  if(!list.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  el.innerHTML=list.slice(0,6).map(t=>`<div style="border-top:1px solid #eef1ee;padding:10px 0">
+    <strong style="font-size:13px">${escape(t.title)}</strong>
+    ${t.shared?'<span class="tag t-share" style="font-size:9px;margin-left:6px">Shared</span>':''}
+    <div style="font-size:12px;color:#5a6e80;margin-top:4px;line-height:1.5">${escape((t.body||'').slice(0,120))}${(t.body||'').length>120?'…':''}</div>
+  </div>`).join('');
+}
+document.getElementById('comp-send')?.addEventListener('click',sendCompanion);
+document.getElementById('comp-input')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCompanion();}});
+document.getElementById('comp-input')?.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';});
+document.getElementById('comp-clear')?.addEventListener('click',async()=>{
+  if(!await appConfirm('Clear this conversation? Your saved prayers and testimonies stay.',{title:'Clear conversation',okText:'Clear'}))return;
+  cache.aiMessages=[];renderCompanion();
+  if(useSupa()){try{await supa.from('ai_messages').delete().eq('user_id',currentUser.id);}catch(e){syncErr(e);}}
+  toast('Conversation cleared.');
+});
+document.querySelectorAll('.comp-sp').forEach(b=>b.addEventListener('click',()=>{
+  const inp=document.getElementById('comp-input');inp.value=b.dataset.prompt;sendCompanion();
+}));
 
 // ═══ TOAST ═══
 let tTimer;

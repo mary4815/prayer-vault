@@ -373,3 +373,42 @@ create policy "members owner remove" on public.group_members for delete
 -- so the browser can't read another creator's name directly).
 alter table public.causes add column if not exists created_by_name text;
 alter table public.causes add column if not exists deadline date;
+
+-- =====================================================================
+-- v22 AI Prayer Companion (safe to re-run)
+-- =====================================================================
+-- Conversation memory + generated testimonies for the AI Companion. The AI
+-- itself runs on the Render server (Anthropic key stays server-side); these
+-- tables are the cloud home for what it remembers and produces. Both are
+-- strictly per-user (mirror the "own prayers" policy).
+
+-- Chat history with the Companion. The server reads the recent rows as
+-- context and appends the new user/assistant turns after each exchange.
+create table if not exists public.ai_messages (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null check (role in ('user','assistant')),
+  content text not null,
+  created_at timestamptz default now()
+);
+create index if not exists idx_ai_messages_user on public.ai_messages(user_id, created_at);
+
+-- Testimonies written from an answered prayer. shared = posted to the wall.
+create table if not exists public.testimonies (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  prayer_id uuid references public.prayers(id) on delete set null,
+  title text, body text not null, verse text,
+  shared boolean default false,
+  created_at timestamptz default now()
+);
+create index if not exists idx_testimonies_user on public.testimonies(user_id, created_at);
+
+alter table public.ai_messages enable row level security;
+alter table public.testimonies enable row level security;
+do $$ begin
+  create policy "own ai_messages" on public.ai_messages for all
+    using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  create policy "own testimonies" on public.testimonies for all
+    using (auth.uid() = user_id) with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;

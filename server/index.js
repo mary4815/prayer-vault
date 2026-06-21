@@ -18,7 +18,13 @@ const {
   BILLING_SUCCESS_URL, BILLING_CANCEL_URL, BILLING_RETURN_URL,
   RESEND_API_KEY, EMAIL_FROM,
   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM,
+  ANTHROPIC_API_KEY,
+  AI_MODEL_CHAT = 'claude-sonnet-4-6',
+  AI_MODEL_FAST = 'claude-haiku-4-5-20251001',
+  AI_DAILY_LIMIT = '40',
 } = process.env;
+
+const AI_LIMIT = Math.max(1, parseInt(AI_DAILY_LIMIT, 10) || 40);
 
 // Subscription tiers. Map a plan name <-> its Stripe Price id (one direction
 // for checkout, the reverse for resolving a plan from a webhook event).
@@ -119,7 +125,166 @@ app.get('/api/health', (_req, res) => res.json({
   ok: true,
   stripe: !!stripe, supabase: !!admin, email: !!resend, whatsapp: !!tw,
   subscriptions: Object.keys(PRICE_TO_PLAN).length > 0,
+  ai: !!ANTHROPIC_API_KEY,
 }));
+
+// ---------------------------------------------------------------------------
+// AI Prayer Companion — Claude (Anthropic) proxied here so the key stays
+// server-side. Memory + testimonies live in Supabase; the browser never sees
+// the AI key and only talks to these JWT-protected routes.
+// ---------------------------------------------------------------------------
+
+// Single call to the Anthropic Messages API. Returns the plain text reply.
+async function callClaude({ model, system, messages, maxTokens = 1024 }) {
+  if (!ANTHROPIC_API_KEY) throw new Error('ai not configured');
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
+  });
+  if (!r.ok) {
+    const body = await r.text();
+    throw new Error(`anthropic ${r.status}: ${body.slice(0, 300)}`);
+  }
+  const data = await r.json();
+  return (data?.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+}
+
+// How many AI turns the user has spent today (resets at midnight UTC). Guards
+// against runaway cost — the browser paywall can be bypassed, this can't.
+async function aiUsageToday(userId) {
+  const since = new Date(); since.setUTCHours(0, 0, 0, 0);
+  const { count } = await admin.from('ai_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId).eq('role', 'user').gte('created_at', since.toISOString());
+  return count || 0;
+}
+
+const COMPANION_SYSTEM = [
+  'You are the Prayer Companion inside Prayer Vault, a Christian prayer app.',
+  'You are warm, gentle, and pastoral — never preachy or judgmental. Speak plainly,',
+  'like a trusted friend who prays. Keep replies fairly short (2-5 short paragraphs).',
+  "You are given the user's own prayer list as context; refer to their specific",
+  'prayers and people by name when relevant, and notice patterns (recurring burdens,',
+  'answered prayers). When you quote Scripture, give the reference (e.g. "Philippians 4:6-7")',
+  'and quote it accurately. You are a companion, not a replacement for a pastor,',
+  'doctor, or emergency help — gently say so if someone is in crisis.',
+].join(' ');
+
+// Build a compact text snapshot of the user's prayers for grounding the model.
+async function prayerContext(userId) {
+  const { data } = await admin.from('prayers')
+    .select('person,request,category,answered,answered_note,created_at')
+    .eq('user_id', userId).order('created_at', { ascending: false }).limit(60);
+  if (!data || !data.length) return 'The user has no saved prayers yet.';
+  const fmt = p => {
+    const who = p.person ? ` for ${p.person}` : '';
+    const cat = p.category ? ` [${p.category}]` : '';
+    const ans = p.answered ? ` (ANSWERED${p.answered_note ? ': ' + p.answered_note : ''})` : '';
+    return `- ${p.request}${who}${cat}${ans}`;
+  };
+  return 'The user\'s prayers (most recent first):\n' + data.map(fmt).join('\n');
+}
+
+// Companion chat: remembers prior turns + the user's prayers.
+app.post('/api/ai/chat', requireUser, async (req, res) => {
+  if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ai not configured' });
+  const message = String((req.body || {}).message || '').trim();
+  if (!message) return res.status(400).json({ error: 'empty message' });
+  if (message.length > 4000) return res.status(400).json({ error: 'message too long' });
+  try {
+    if (await aiUsageToday(req.user.id) >= AI_LIMIT) {
+      return res.status(429).json({ error: `Daily limit reached (${AI_LIMIT} messages). Try again tomorrow.` });
+    }
+    const { data: history } = await admin.from('ai_messages')
+      .select('role,content').eq('user_id', req.user.id)
+      .order('created_at', { ascending: false }).limit(20);
+    const prior = (history || []).reverse().map(m => ({ role: m.role, content: m.content }));
+    const ctx = await prayerContext(req.user.id);
+    const messages = [
+      ...prior,
+      { role: 'user', content: `(Context — my prayers)\n${ctx}\n\n---\n\n${message}` },
+    ];
+    const reply = await callClaude({ model: AI_MODEL_CHAT, system: COMPANION_SYSTEM, messages, maxTokens: 1024 });
+    await admin.from('ai_messages').insert([
+      { user_id: req.user.id, role: 'user', content: message },
+      { user_id: req.user.id, role: 'assistant', content: reply },
+    ]);
+    res.json({ reply });
+  } catch (e) {
+    console.error('ai/chat error:', e.message);
+    res.status(500).json({ error: 'The Companion is unavailable right now.' });
+  }
+});
+
+// Suggest 1-3 Scripture verses for a topic or a specific prayer.
+app.post('/api/ai/verse', requireUser, async (req, res) => {
+  if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ai not configured' });
+  const { topic, prayerId } = req.body || {};
+  try {
+    let subject = String(topic || '').trim();
+    if (!subject && prayerId) {
+      const { data: p } = await admin.from('prayers')
+        .select('request,person,category').eq('user_id', req.user.id).eq('id', prayerId).maybeSingle();
+      if (p) subject = [p.request, p.person && `for ${p.person}`, p.category].filter(Boolean).join(' ');
+    }
+    if (!subject) return res.status(400).json({ error: 'nothing to look up' });
+    const system = 'You are a Scripture guide. Return ONLY valid JSON, no prose, no markdown fences.';
+    const prompt = `For someone praying about: "${subject}"\n` +
+      'Return 1-3 encouraging, accurate Bible verses as JSON of the exact shape:\n' +
+      '{"verses":[{"ref":"Book 0:0","text":"full verse text","why":"one short sentence on why it fits"}]}';
+    const raw = await callClaude({
+      model: AI_MODEL_FAST, system,
+      messages: [{ role: 'user', content: prompt }], maxTokens: 700,
+    });
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch { const m = raw.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { verses: [] }; }
+    res.json({ verses: Array.isArray(parsed.verses) ? parsed.verses.slice(0, 3) : [] });
+  } catch (e) {
+    console.error('ai/verse error:', e.message);
+    res.status(500).json({ error: 'Could not fetch a verse right now.' });
+  }
+});
+
+// Write a shareable testimony from an answered prayer.
+app.post('/api/ai/testimony', requireUser, async (req, res) => {
+  if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ai not configured' });
+  const { prayerId } = req.body || {};
+  if (!prayerId) return res.status(400).json({ error: 'prayerId required' });
+  try {
+    const { data: p } = await admin.from('prayers')
+      .select('request,person,category,answered,answered_note,created_at,answered_date')
+      .eq('user_id', req.user.id).eq('id', prayerId).maybeSingle();
+    if (!p) return res.status(404).json({ error: 'prayer not found' });
+    const system = 'You write short, heartfelt Christian testimonies. Return ONLY valid JSON, no markdown fences.';
+    const detail = [
+      `Prayer request: ${p.request}`,
+      p.person && `Prayed for: ${p.person}`,
+      p.category && `Category: ${p.category}`,
+      p.answered_note && `How it was answered: ${p.answered_note}`,
+    ].filter(Boolean).join('\n');
+    const prompt = `Write a first-person testimony (about 80-140 words) celebrating this answered prayer, ` +
+      `suitable to share with a prayer community. Warm, humble, specific, giving thanks to God.\n\n${detail}\n\n` +
+      'Return JSON of the exact shape: {"title":"short title","body":"the testimony","verse":"one fitting verse with reference"}';
+    const raw = await callClaude({
+      model: AI_MODEL_CHAT, system,
+      messages: [{ role: 'user', content: prompt }], maxTokens: 700,
+    });
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch { const m = raw.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
+    if (!parsed || !parsed.body) return res.status(502).json({ error: 'could not generate testimony' });
+    res.json({ title: parsed.title || 'Answered Prayer', body: parsed.body, verse: parsed.verse || '' });
+  } catch (e) {
+    console.error('ai/testimony error:', e.message);
+    res.status(500).json({ error: 'Could not write a testimony right now.' });
+  }
+});
 
 // Create a Stripe Checkout session for a donation to a cause
 app.post('/api/donate/checkout', requireUser, async (req, res) => {
