@@ -711,7 +711,7 @@ button{cursor:pointer}
       <button class="nbtn active" data-page="today"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L10 3l7 7"/><path d="M5 8.5V17h4v-4h2v4h4V8.5"/></svg></span>Today <span class="badge" id="nav-badge" style="display:none">0</span></button>
       <button class="nbtn" data-page="vault"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 0 1 6 0v3"/></svg></span>Prayer Vault</button>
       <button class="nbtn" data-page="people"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6" r="3"/><path d="M4 18a6 6 0 0 1 12 0"/></svg></span>Prayer Map</button>
-      <button class="nbtn" data-page="companion"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H8l-4 3z"/><path d="M10 6.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg></span>AI Companion <span class="tag t-share" style="font-size:9px;padding:1px 6px;margin-left:4px">AI</span></button>
+      <button class="nbtn" data-page="companion"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H8l-4 3z"/><path d="M10 6.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg></span>Soul Friend</button>
       <div class="s-section">Record</div>
       <button class="nbtn" data-page="answered"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="m7 10 2 2 4-4"/></svg></span>Answered</button>
       <button class="nbtn" data-page="review"><span class="ni"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17.5A2 2 0 0 1 6 16h12"/><path d="M4 2.5A2 2 0 0 0 6 4h12v16H6a2 2 0 0 1-2-2z"/></svg></span>Monthly Review</button>
@@ -828,7 +828,7 @@ button{cursor:pointer}
       <!-- AI PRAYER COMPANION -->
       <div class="page" id="page-companion">
         <div class="topbar">
-          <div><h1>AI Prayer Companion</h1><p>It remembers your prayers, suggests Scripture, and helps you give thanks.</p></div>
+          <div><h1>Soul Friend</h1><p>A gentle friend who remembers your prayers, walks with you in Scripture, and helps you give thanks.</p></div>
           <button class="btn btn-ghost btn-sm" id="comp-clear">Clear conversation</button>
         </div>
         <div class="hth-layout">
@@ -836,8 +836,8 @@ button{cursor:pointer}
             <div class="chat-header">
               <div class="ch-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px"><path d="M4 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4z"/></svg></div>
               <div>
-                <div class="ch-name">Prayer Companion</div>
-                <div class="ch-sub">Remembers your prayers · Scripture · Testimony</div>
+                <div class="ch-name">Soul Friend</div>
+                <div class="ch-sub">Walks with you · Scripture · Testimony</div>
               </div>
             </div>
             <div class="chat-msgs" id="comp-msgs">
@@ -850,14 +850,14 @@ button{cursor:pointer}
                 <textarea class="chat-textarea" id="comp-input" placeholder="Ask about your prayers, or share what's on your heart…" rows="1"></textarea>
                 <button class="chat-send" id="comp-send"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px"><path d="M3 12l18-8-8 18-2-8z"/></svg></button>
               </div>
-              <div class="chat-hint">Your Companion sees your saved prayers so it can pray with you specifically. It is a companion, not a substitute for a pastor or professional help.</div>
+              <div class="chat-hint">Soul Friend sees your saved prayers so it can pray with you specifically. It's a friend to pray alongside — not a substitute for a pastor or professional help.</div>
             </div>
           </div>
           <div class="hth-side">
             <div class="hth-info">
               <h3>What it can do</h3>
               <p>It knows the people and requests in your Vault. Ask it to reflect on a struggle, find a verse, or notice what God has been doing.</p>
-              <div class="disc">Conversations are private to your account. Scripture references are AI-suggested — keep your Bible close.</div>
+              <div class="disc">Conversations are private to your account. Scripture references are gently suggested — keep your Bible close.</div>
             </div>
             <div class="starter-prompts">
               <h3>Try asking</h3>
@@ -2007,7 +2007,7 @@ document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',(
 
 // ═══ MOBILE "MORE" SHEET ═══
 const MOB_MORE_PAGES=[
-  {page:'companion',label:'AI Companion'},
+  {page:'companion',label:'Soul Friend'},
   {page:'vault',label:'Prayer Vault'},
   {page:'groups',label:'Groups'},
   {page:'confession',label:'Confession'},
@@ -4078,7 +4078,7 @@ async function aiToken(){
 }
 async function aiPost(path,body){
   const token=await aiToken();
-  if(!API_BASE||!token)throw new Error('Sign in to use the Companion.');
+  if(!API_BASE||!token)throw new Error('Sign in to use Soul Friend.');
   const res=await fetch(API_BASE+path,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body||{})});
   let data={};try{data=await res.json();}catch(e){}
   if(!res.ok)throw new Error(data.error||('Request failed ('+res.status+')'));
@@ -4099,7 +4099,7 @@ function renderCompanion(){
   const typing=document.getElementById('comp-typing');
   const msgs=cache.aiMessages||[];
   if(!msgs.length){
-    el.innerHTML=`<div class="chat-msg"><div class="msg-av">${icon('cross',16)}</div><div><div class="msg-bubble">Hello ${escape(currentUser.first)}. I'm your Prayer Companion — I can see the prayers in your Vault, so we can pray through them together. Ask me anything, or tap a prompt to begin.</div><div class="msg-time">Now</div></div></div>`;
+    el.innerHTML=`<div class="chat-msg"><div class="msg-av">${icon('cross',16)}</div><div><div class="msg-bubble">Hello ${escape(currentUser.first)}. I'm Soul Friend — I walk with you in prayer. I can see the prayers in your Vault, so we can bring them to God together. Share whatever's on your heart, or tap a prompt to begin.</div><div class="msg-time">Now</div></div></div>`;
   }else{
     el.innerHTML=msgs.map(compMsgHTML).join('');
   }
@@ -4112,7 +4112,7 @@ async function sendCompanion(){
   const input=document.getElementById('comp-input');
   const text=(input.value||'').trim();
   if(!text)return;
-  if(!supa){toast('Cloud sign-in is required for the Companion.');return;}
+  if(!supa){toast('Cloud sign-in is required for Soul Friend.');return;}
   input.value='';input.style.height='';
   cache.aiMessages=[...(cache.aiMessages||[]),{role:'user',text,ts:Date.now()}];
   renderCompanion();
@@ -4123,7 +4123,7 @@ async function sendCompanion(){
     const { reply }=await aiPost('/api/ai/chat',{message:text});
     cache.aiMessages=[...(cache.aiMessages||[]),{role:'assistant',text:reply||'…',ts:Date.now()}];
   }catch(e){
-    cache.aiMessages=[...(cache.aiMessages||[]),{role:'assistant',text:'🕊️ '+(e.message||'The Companion is unavailable right now. Please try again.'),ts:Date.now()}];
+    cache.aiMessages=[...(cache.aiMessages||[]),{role:'assistant',text:'🕊️ '+(e.message||'Soul Friend is unavailable right now. Please try again.'),ts:Date.now()}];
   }finally{
     compSending=false;
     if(typing)typing.classList.remove('show');
